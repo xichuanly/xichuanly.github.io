@@ -151,19 +151,27 @@
     <article id="post-刚体运动小结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">刚体运动小结</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
+  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
+</a>
+        
+      </header>
+    
     <div class="article-entry" itemprop="articleBody">
       
-        <p>刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。<br>对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体的姿态。也就是坐标系 $B$ 的三个轴（单位向量 $\vec{x}_B, \vec{y}_B, \vec{z}<em>B$）在参考系 $A$ 下的投影坐标。<br>我们将这三个投影出来的列向量横向排开，就得到了旋转矩阵 $R</em>{AB}$**：</p>
-<p>$$R_{AB} &#x3D; \begin{bmatrix} | &amp; | &amp; | \ {}^A\vec{x}_B &amp; {}^A\vec{y}_B &amp; {}^A\vec{z}_B \ | &amp; | &amp; | \end{bmatrix}$$</p>
-<p>怎么表示不同坐标系的转换呢，如果我们知道一个点在A坐标系下的位置，想通过B坐标系得到这个点在C坐标系下的位置，我们当然可以这样写：<br>$p_B &#x3D; R_{BA} p_A + t_{BA}$<br>$p_C &#x3D; R_{CB} p_B + t_{CB}$<br>但是这样会有一个问题<br>$p_C &#x3D; R_{CB} R_{BA} p_A + R_{CB} t_{BA} + t_{CB}$<br>越往后面，这种计算的复杂度会越来越大。于是，我们导入位姿矩阵T（满足李群）,与齐次坐标$$P_{homogeneous} &#x3D; \begin{bmatrix} x \ y \ z \ 1 \end{bmatrix}$$<br>$$T &#x3D; \begin{bmatrix} R &amp; p \ 0 &amp; 1 \end{bmatrix}$$<br>其中p是在B坐标系下A坐标系原点的位置，大小等同于$t_{BA}$<br>这样，<br>$b &#x3D; T_1 a$<br>$c &#x3D; T_2 b$<br>$c &#x3D; T_2 T_1 a$<br>极大的方便了坐标系的转换。</p>
-<p>现在，我们需要考虑怎么处理转动和平动这两个问题了。<br>直觉的思路是直接把T对时间求导，也就是$$\dot{T} &#x3D; \frac{d}{dt} \begin{bmatrix} R_{SB} &amp; p_{SB} \ 0 &amp; 1 \end{bmatrix} &#x3D; \begin{bmatrix} \dot{R}<em>{SB} &amp; \dot{p}</em>{SB} \ 0 &amp; 0 \end{bmatrix}$$<br>很明显$\dot{p}<em>{SB}$就是刚体在绝对坐标中的平移速度，但是$\dot{R}</em>{SB}$ 我们看不出有什么意义。我们在这里利用R的正交性进行一些数学上的操作：<br>把$$R_{SB} R_{SB}^T &#x3D; I$$<br>两边对时间求导，得到$$\dot{R}<em>{SB} R</em>{SB}^T + R_{SB} \dot{R}<em>{SB}^T &#x3D; 0$$<br>交换一下得到（传送锚点1）<br>$$\dot{R}</em>{SB} R_{SB}^T &#x3D; -(\dot{R}<em>{SB} R</em>{SB}^T)^T$$<br>也就是$\dot{R}<em>{SB} R</em>{SB}^T$ 是一个反对称矩阵，这个矩阵有什么用呢？我们现在找一个绝对坐标系S和一个本体坐标系B，B中刚体上有一个固定点P绕B原点旋转，通过旋转矩阵，我们能这样描述这个点在绝对坐标系中的坐标：$$p_S(t) &#x3D; R_{SB}(t) p_B + t_{SB}$$<br>由于对于坐标系B来说，点P的坐标是固定的，因此$p_b$应当是一个常数。对时间求导，我们能知道他的真实速度$$v_S(t) &#x3D; \dot{p}<em>S(t) &#x3D; \dot{R}</em>{SB}(t) p_B + \dot{t}<em>{SB}$$<br>利用$$p_S - t</em>{SB} &#x3D; R_{SB} p_B$$</p>
-<p>$$p_B &#x3D; R_{SB}^T (p_S - t_{SB})$$<br>替换$p_b$，于是$$v_S &#x3D; (\dot{R}<em>{SB} R</em>{SB}^T) (p_S - t_{SB}) + \dot{t}<em>{SB}$$<br>对比发现$\dot{R}</em>{SB} R_{SB}^T &#x3D; -(\dot{R}<em>{SB} R</em>{SB}^T)^T &#x3D; \hat{\omega}$就是$\omega$ 的反对称矩阵$\hat{\omega}$ 。<br>回到传送锚点1，我们知道$-(\dot{R}<em>{SB} R</em>{SB}^T)^T$有$\hat{\omega}$的含义，那下一步目的就很明确了，把$\dot{R}<em>{SB}$的信息解放出来！<br>既然看到目标值成分中有转置，我们先构造个$R^T$ 出来：$$T^{-1} &#x3D; \begin{bmatrix} R</em>{SB}^T &amp; -R_{SB}^T p_{SB} \ 0 &amp; 1 \end{bmatrix}$$<br>再把原始项抓过来比较一下：$$\dot{T} &#x3D; \frac{d}{dt} \begin{bmatrix} R_{SB} &amp; p_{SB} \ 0 &amp; 1 \end{bmatrix} &#x3D; \begin{bmatrix} \dot{R}<em>{SB} &amp; \dot{p}</em>{SB} \ 0 &amp; 0 \end{bmatrix}$$<br>不难发现，直接相乘就有了！于是$$\dot{T} T^{-1} &#x3D; \begin{bmatrix} \dot{R}<em>{SB} R</em>{SB}^T &amp; -\dot{R}<em>{SB} R</em>{SB}^T p_{SB} + \dot{p}<em>{SB} \ 0 &amp; 0 \end{bmatrix} &#x3D; \begin{bmatrix} [\omega</em>{SB}] &amp; \mathbf{\dot{p}<em>{SB} - \omega</em>{SB} \times p_{SB}} \ 0 &amp; 0 \end{bmatrix}$$<br>${\dot{p}<em>{SB} - \omega</em>{SB} \times p_{SB}}$看起来可能还是有点朦胧，但是我们使用欧拉速度公式的话，这个就是线速度吗。通过欧拉速度公式$$v_A &#x3D; v_B + \omega \times \vec{r}<em>{BA}$$<br>这不就是上面式子的格式嘛，我们就得到<br>$$v_s &#x3D; \dot{p}</em>{SB} - \omega_{SB} \times p_{SB}$$<br>其中$\dot{p}<em>{SB}$：${B}$ 系原点在 ${S}$ 系中的真实平移速度；$\omega</em>{SB}$：刚体相对于 ${S}$ 系的角速度；$p_{SB}$：从 ${S}$ 系原点指向 ${B}$ 系原点的向量；$v_s$：<br>我们把调整之后的矩阵称为旋量矩阵（它也是李代数），$$[\mathcal{V}_s] &#x3D; \dot{T} T^{-1} &#x3D; \begin{bmatrix} [\omega_s] &amp; v_s \ 0 &amp; 0 \end{bmatrix}$$</p>
-<p>现在，我们有了速度，但这个速度是站在绝对坐标的角度去观察问题的，那如果我们想在B坐标系观察C坐标系的速度怎么办，我们需要速度层面的“转换算子”。</p>
-<p>实际上，刚才为了保证叙事的流畅性，有一个线索被刻意淡视了：为什么构建的时候要用$\hat{\omega_s}$呢？，$\hat{\omega_b}$呢？<br>实际上，通过旋转矩阵，我们可以很轻松的获得B坐标系下旋转轴的方向：$$\omega_b &#x3D; R_{SB}^T \omega_s$$<br>我们把$R_{SB}^T$给原来的式子乘上：$$[\omega_b] &#x3D; R_{SB}^T (\dot{R}<em>{SB} R</em>{SB}^T) R_{SB} &#x3D; \mathbf{R_{SB}^T \dot{R}<em>{SB}}$$<br>似曾相识啊，$T^{-1} \dot{T}$  肯定能提取出这种结构（这个位置交换应该显而易见吧（）），<br>所以$$T^{-1} \dot{T} &#x3D; \begin{bmatrix} R</em>{SB}^T &amp; -R_{SB}^T p_{SB} \ 0 &amp; 1 \end{bmatrix} \begin{bmatrix} \dot{R}<em>{SB} &amp; \dot{p}</em>{SB} \ 0 &amp; 0 \end{bmatrix} &#x3D; \begin{bmatrix} R_{SB}^T \dot{R}<em>{SB} &amp; R</em>{SB}^T \dot{p}<em>{SB} \ 0 &amp; 0 \end{bmatrix}$$<br>也就是$$[\mathcal{V}<em>b] &#x3D; T</em>{SB}^{-1} \dot{T}</em>{SB} &#x3D; \begin{bmatrix} [\omega_b] &amp; v_b \ 0 &amp; 0 \end{bmatrix}$$<br>现在在来推导不同坐标系速度的转换就简单多了，现在已知条件是：<br> ${B}$ 系里的旋量是 $\mathcal{V}<em>B &#x3D; \begin{bmatrix} \omega_B \ v_B \end{bmatrix}$。 ${A}$ 系里的旋量 $\mathcal{V}<em>A &#x3D; \begin{bmatrix} \omega_A \ v_A \end{bmatrix}$。${B}$ 系相对于 ${A}$ 系的位姿是 $T</em>{AB} &#x3D; \begin{bmatrix} R</em>{AB} &amp; p_{AB} \ 0 &amp; 1 \end{bmatrix}$<br> 我们有一个很简单的思路：通过绝对坐标系中转。<br> $$[\mathcal{V}<em>s] &#x3D; T</em>{SB} [\mathcal{V}<em>b] T</em>{SB}^{-1}$$<br>$$ [\mathcal{V}<em>a] &#x3D; T</em>{SA}^{-1}[\mathcal{V}<em>s] T</em>{SA}$$<br>也就是$$[\mathcal{V}<em>a] &#x3D; T</em>{SA}^{-1} \Big( T_{SB} [\mathcal{V}<em>b] T</em>{SB}^{-1} \Big) T_{SA}$$<br>又因为 $T_{SA}^{-1} T_{SB} &#x3D; T_{AB}$；$T_{SB}^{-1} T_{SA} &#x3D; (T_{SA}^{-1} T_{SB})^{-1} &#x3D; T_{SB}^{-1} T_{SA} &#x3D; T_{AB}^{-1}$ 就有：<br> $$[\mathcal{V}<em>a] &#x3D; T</em>{AB} [\mathcal{V}<em>b] T</em>{AB}^{-1}$$<br>计算之后，得到$[\omega_a] &#x3D; R[\omega_b] R^T$；$v_a &#x3D; -R[\omega_b] R^T p + R v_b$的关系。我们发现，这里有一个共同的因子$R[\omega_b] R^T$，我们能不能把他换一种方式表达呢？还真有，这里插入一条等式：$$R[\omega]R^T &#x3D; [R\omega]$$证明如下：<br>首先有以下两条性质$$[a]b &#x3D; a \times b$$$$R(a \times b) &#x3D; (Ra) \times (Rb)$$对原式交换一下运算顺序<br>$$(R[\omega]R^T)x &#x3D; R \Big( [\omega] (R^T x) \Big) &#x3D; R \Big( \omega \times (R^T x) \Big)$$按照上面性质运算$$R \Big( \omega \times (R^T x) \Big) &#x3D; (R\omega) \times \Big( R(R^T x) \Big)$$<br>显而易见，上式可以化为$$(R\omega) \times x$$<br>得证。<br>有了这个等式，表达就方便得多了：<br>$$\omega_a &#x3D; R \omega_b + 0 \cdot v_b$$<br>$$v_a &#x3D; [p]R \omega_b + R v_b$$也可以这样表述：$$\begin{bmatrix} \omega_a \ v_a \end{bmatrix} &#x3D; \begin{bmatrix} R &amp; 0 \ [p]R &amp; R \end{bmatrix} \begin{bmatrix} \omega_b \ v_b \end{bmatrix}$$<br>这就是不同参考系下运动旋量的转换，记$$Ad_{T_{AB}} &#x3D; \begin{bmatrix} R_{AB} &amp; 0 \ [p_{AB}]R_{AB} &amp; R_{AB} \end{bmatrix}$$称之为Adjoint矩阵 ，也就是伴随变换矩阵。</p>
-<p>现在刚体运动中还有最后一项没有解决，运动和位姿怎么相互转化，毕竟这是我们最关心的问题之一。还记得上面提到位姿矩阵属于李群，而旋量矩阵属于李代数吗，关于这方面的理论本文将不会介绍，但至少要知道：李群是一个连续光滑群，运算只包含了乘法而不包含加法，但控制中，例如PID，经常性的会利用目标状态与当前状态的差值进行控制，因此我们需要一种方法来运算加减；于是通过映射，我们将弯曲的李群流型映射到平直的李代数平面进行加减的运算，而实现这个过程的数学工具就是对数映射和指数映射。</p>
-<p>对数映射，是用来把运动旋量的作用反映到位姿矩阵上的工具。我们还是按照先处理旋转再处理平移的思路来分析问题。对于$\omega$，我们当然会想到乘以时间$\theta$ ，再将旋转角度体现到旋转矩阵上。现在来看这个公式：$$p_s(t) &#x3D; R(t) p_b$$这个公式我们很熟悉了，把本征坐标转化为绝对坐标，现在我们求导，由于本征坐标是个常量，求导应该是$$\dot{p}<em>s(t) &#x3D; \dot{R}(t) p_b$$现在我们给绝对线速度换一种表示方式：$\dot{p} &#x3D; \omega \times p$ 也就是$$\dot{p}<em>s(t) &#x3D; [\omega_s] p_s(t)$$对比发现：$$\dot{R}(t) &#x3D; [\omega_s] R(t)$$这不是经典的常微分情况吗，解应当是指数形式，即$$R(t) &#x3D; e^{[\omega_s] t} R(0) &#x3D; e^{[\omega_s] t}$$这个方程还有一种简化运算的方法，即罗德里格斯公式展开后的结果。我们先约定$\omega_s &#x3D; |\omega_s| \cdot u$， $\theta &#x3D; |\omega_s| t$，所以，$$R(\theta) &#x3D; e^{[u]\theta}$$<br>先把指数用泰勒展开：$$e^{[u]\theta} &#x3D; I + [u]\theta + \frac{([u]\theta)^2}{2!} + \frac{([u]\theta)^3}{3!} + \dots$$我们发现$$[u]^3 &#x3D; -[u]$$$$[u]^4 &#x3D; -[u]^2$$<br>也就能这样简化：奇数项变成：$\big( \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \dots \big) [u]$；<br>偶数项变成：$\big( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \dots \big) [u]^2$<br>系数里不就是sin和1-cos吗？于是有$$R(\theta) &#x3D; e^{[u]\theta} &#x3D; I + \sin\theta [u] + (1 - \cos\theta) [u]^2$$旋转和角速度终于被解决了！我们回到最开始的初心使命：把运动旋量映射到位姿矩阵上，<br>我们知道$$\tilde{p}</em>{new} &#x3D; T \cdot \tilde{p}</em>{old}$$$$[\mathcal{V}] &#x3D; T_{}^{-1} \dot{T}<em>{}$$<br><strong>这里需要特别注意</strong>：我们此时要处理的是从<strong>恒定速度旋量</strong> V 出发，经过 <strong>时间 t</strong> 生成位姿矩阵$T(t) &#x3D; e^{\mathcal{V}t}$。<strong>设 $\mathcal{V} &#x3D; \begin{bmatrix} [\omega] &amp; v \ 0 &amp; 0 \end{bmatrix}$，其中 ω 是角速度向量（有大小），v 是线速度向量</strong>。经过时间 t，转动角度$\theta &#x3D; |\omega|t$，单位转轴 $u &#x3D; \omega&#x2F;|\omega|$。<br>有了前面旋转矩阵的探索，我们就得到：$$T(\theta) &#x3D; e^{[\mathcal{V}]\theta} &#x3D; \begin{bmatrix} R(\theta) &amp; p(\theta) \ 0 &amp; 1 \end{bmatrix}$$分块矩阵的左上角已经解决了，我们着重解决右上角，观察：$$[\mathcal{V}]^2 &#x3D; \begin{bmatrix} [\omega] &amp; v \ 0 &amp; 0 \end{bmatrix} \begin{bmatrix} [\omega] &amp; v \ 0 &amp; 0 \end{bmatrix} &#x3D; \begin{bmatrix} [\omega]^2 &amp; [\omega]v \ 0 &amp; 0 \end{bmatrix}$$$$[\mathcal{V}]^3 &#x3D; \begin{bmatrix} [\omega] &amp; v \ 0 &amp; 0 \end{bmatrix} \begin{bmatrix} [\omega]^2 &amp; [\omega]v \ 0 &amp; 0 \end{bmatrix} &#x3D; \begin{bmatrix} [\omega]^3 &amp; [\omega]^2 v \ 0 &amp; 0 \end{bmatrix}$$发现平移速度一直在被角速度叉乘。我们展开$$e^{[\mathcal{V}]\theta} &#x3D; I</em>{4 \times 4} + [\mathcal{V}]\theta + \frac{\theta^2}{2!} [\mathcal{V}]^2 + \frac{\theta^3}{3!} [\mathcal{V}]^3 + \dots$$重点关注右上角：$$p &#x3D; \left( I\theta + \frac{\theta^2}{2!} [\omega] + \frac{\theta^3}{3!} [\omega]^2 + \frac{\theta^4}{4!} [\omega]^3 + \frac{\theta^5}{5!} [\omega]^4 + \dots \right) v$$利用之前角速度的关系：$$p &#x3D; \left[ I\theta + \left( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \dots \right) [\omega] + \left( \frac{\theta^3}{3!} - \frac{\theta^5}{5!} + \dots \right) [\omega]^2 \right] v$$这不还是sin、cos吗？也就是：$$p &#x3D; \big( I\theta + (1 - \cos\theta) [\omega] + (\theta - \sin\theta) [\omega]^2 \big) v$$合并就有$$e^{[\mathcal{V}]\theta} &#x3D; \begin{bmatrix} e^{[\omega]\theta} &amp; \big( I\theta + (1 - \cos\theta) [\omega] + (\theta - \sin\theta) [\omega]^2 \big) v \ 0 &amp; 1 \end{bmatrix} $$<br>可喜可贺<del>可喜可贺</del></p>
-<p>现在来关注怎么从位姿矩阵推导出运动旋量，有人问：既然有位姿矩阵推导运动旋量的方法，为什么还要推导一次？实际上，这两个推导方式是处理不同问题的，$$[\mathcal{V}<em>s] &#x3D; \dot{T} T^{-1} &#x3D; \begin{bmatrix} [\omega_s] &amp; v_s \ 0 &amp; 0 \end{bmatrix}$$由于有导数的存在，实际上只能处理运动的单个物体。那从位姿A到位姿B我们怎么处理，这就是对数映射的作用，我们约定$$T &#x3D; T</em>{rel} &#x3D; T_{start}^{-1} \cdot T_{end}$$也就是以后推导中T实际上就是两个位姿的转换矩阵。我们还是先来处理角速度的问题。<br>首先，关注转了多少度的问题，我们利用方阵迹的只和旋转角度有关的属性就能获得$\theta$ 的信息$$\text{tr}(R) &#x3D; R_{11} + R_{22} + R_{33} &#x3D; 1 + 2\cos\theta$$我们通过反三角函数就能获得$\theta$ 的大小：$$\theta &#x3D; \arccos\left(\frac{R_{11} + R_{22} + R_{33} - 1}{2}\right)$$现在的问题就是怎么获得转轴信息，一个旋转矩阵利用罗德里格斯展开就是$$R &#x3D; I + \sin\theta [\omega] + (1-\cos\theta)[\omega]^2$$我们观察到，I是对称的；$[\omega]^2$也是对称的，只有sin项能反应出正负区别，也就是包含旋转轴信息。我们可以利用反对称的性质获得这一项：$$R - R^T &#x3D; \begin{bmatrix} 0 &amp; R_{12}-R_{21} &amp; R_{13}-R_{31} \ R_{21}-R_{12} &amp; 0 &amp; R_{23}-R_{32} \ R_{31}-R_{13} &amp; R_{32}-R_{23} &amp; 0 \end{bmatrix}&#x3D;2sin{\theta}[\omega] &#x3D; 2\sin\theta \begin{bmatrix} 0 &amp; -\omega_z &amp; \omega_y \ \omega_z &amp; 0 &amp; -\omega_x \ -\omega_y &amp; \omega_x &amp; 0 \end{bmatrix}$$对齐每一项：$$\omega &#x3D; \frac{1}{2\sin\theta} \begin{bmatrix} R_{32} - R_{23} \ R_{13} - R_{31} \ R_{21} - R_{12} \end{bmatrix}$$再结合之前的$\theta$ 我们就得到了旋转的信息了。现在我们在关注速度信息。<br>我们都知道，速度信息其实同时包含线速度和平移速度，也就是摆线的速度，由于：$$p_s(T) &#x3D; \int_{0}^{T} \dot{p}<em>s(t) , dt &#x3D; \int</em>{0}^{T} R_{sb}(t) v_b , dt$$因为$v_b$是一个常量，把他提出来，$$p_s(T) &#x3D; \left( \int_{0}^{T} R_{sb}(t) , dt \right) v_b$$令$$\left( \int_{0}^{T} R_{sb}(t) , dt \right) &#x3D; J(t)$$我们把这个矩阵称为雅可比矩阵，现在我们展开化简一下$$R_{sb}(t) &#x3D; I + \frac{\sin(|\omega_b| t)}{|\omega_b|} [\omega_b] + \frac{1 - \cos(|\omega_b| t)}{|\omega_b|^2} [\omega_b]^2$$为了简洁考虑，令$u &#x3D; \frac{\omega_b}{|\omega_b|}$，就有$$R_{sb}(t) &#x3D; I + \sin(|\omega_b| t) [u] + (1 - \cos(|\omega_b| t)) [u]^2$$带入原式$$J_{time}(T) &#x3D; \int_{0}^{T} \left( I + \sin(|\omega_b| t) [u] + (1 - \cos(|\omega_b| t)) [u]^2 \right) dt$$常数项积分结果：$$\int_{0}^{T} I , dt &#x3D; I \cdot T$$sin项：$$\int_{0}^{T} \sin(|\omega_b| t) [u] , dt &#x3D; \left[ -\frac{\cos(|\omega_b| t)}{|\omega_b|} \right]<em>0^T [u] &#x3D; \frac{1 - \cos(|\omega_b| T)}{|\omega_b|} [u]$$cos项：$$\int</em>{0}^{T} (1 - \cos(|\omega_b| t)) [u]^2 , dt &#x3D; \left[ t - \frac{\sin(|\omega_b| t)}{|\omega_b|} \right]<em>0^T [u]^2 &#x3D; \left( T - \frac{\sin(|\omega_b| T)}{|\omega_b|} \right) [u]^2$$雅可比矩阵就表示为：$$J</em>{time}(T) &#x3D; I \cdot T + \frac{1 - \cos(|\omega_b| T)}{|\omega_b|} [u] + \frac{|\omega_b| T - \sin(|\omega_b| T)}{|\omega_b|} [u]^2$$我们看cos项里的数值，$|\omega_b| T$ 不就是转过的角度$\theta$ 吗，我们简化为$$J_{time}(T) &#x3D; T  \left( I + \frac{1 - \cos\theta}{\theta} [u] + \frac{\theta - \sin\theta}{\theta} [u]^2 \right)$$我们回到速度和位姿的转化，我们有$$p &#x3D; J_{time}(T) \cdot v_b$$观察之前雅可比的形状，我们把标准雅可比和T分开，就有<br>$$p &#x3D; \big( T \cdot J_{geom}(\theta) \big) \cdot v_b &#x3D; J_{geom}(\theta) \cdot (v_b T)$$也就是$$v_b &#x3D; \frac{1}{T} J_{geom}^{-1}(\theta) \cdot p$$我们需要做的就是对雅可比矩阵求逆（直接求逆会丢精度，这里是待定系数得到的，推导可以自行搜索）：$$J_{geom}^{-1}(\theta) &#x3D; I - \frac{\theta}{2} [u] + \left( 1 - \frac{\theta}{2} \cot\left(\frac{\theta}{2}\right) \right) [u]^2$$现在我们既有$\omega$ 也有$v$，我们只需要组装一下，就能得到运动旋量$[\mathcal{V}]$ ，哦咩跌多~~</p>
-
+        <p>这里先放一点首页摘要文字：这是一篇关于刚体运动、位姿矩阵、旋量和伴随变换的学习笔记。</p>
+        
+          <a class="article-more-a" href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/#more">more >></a>
+        
       
 
       
@@ -171,11 +179,33 @@
     <div class="article-info article-info-index">
       
       
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
       
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/随笔//" class="article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
 
       
         <p class="article-more-link">
-          <a class="article-more-a" href="/2026/05/14/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">展开全文 >></a>
+          <a class="article-more-a" href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">展开全文 >></a>
         </p>
       
 
@@ -317,6 +347,10 @@ MathJax.Hub.Queue(function() {
             <input type="checkbox" q-on="click:toggleTag(e)" q-attr="checked:showTags">
           </label>
           <ul class="article-tag-list" q-show="showTags">
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">随笔</a>
+              </li>
             
             <div class="clearfix"></div>
           </ul>

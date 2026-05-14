@@ -6,22 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
-  <title>xichuanly</title>
+  <title>刚体运动小结 | xichuanly</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体">
+  <meta name="description" content="这里先放一点首页摘要文字：这是一篇关于刚体运动、位姿矩阵、旋量和伴随变换的学习笔记。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="xichuanly">
-<meta property="og:url" content="https://xichuanly.github.io/2026/05/14/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/index.html">
+<meta property="og:title" content="刚体运动小结">
+<meta property="og:url" content="https://xichuanly.github.io/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/index.html">
 <meta property="og:site_name" content="xichuanly">
-<meta property="og:description" content="刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体">
+<meta property="og:description" content="这里先放一点首页摘要文字：这是一篇关于刚体运动、位姿矩阵、旋量和伴随变换的学习笔记。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-05-14T14:40:46.616Z">
-<meta property="article:modified_time" content="2026-05-11T06:55:15.299Z">
+<meta property="article:published_time" content="2026-05-11T06:55:15.000Z">
+<meta property="article:modified_time" content="2026-05-14T15:54:56.705Z">
 <meta property="article:author" content="xichuanly">
-<meta property="article:tag" content="blog">
-<meta property="article:tag" content="math">
-<meta property="article:tag" content="notes">
-<meta property="article:tag" content="robotics">
+<meta property="article:tag" content="随笔">
 <meta name="twitter:card" content="summary">
   
   
@@ -151,9 +148,27 @@
             <article id="post-刚体运动小结" class="article article-type-post " itemscope itemprop="blogPost">
   <div class="article-inner">
     
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      刚体运动小结
+    </h1>
+  
+
+        
+        <a href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
+  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
+</a>
+        
+      </header>
+    
     <div class="article-entry" itemprop="articleBody">
       
-        <p>刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。<br>对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体的姿态。也就是坐标系 $B$ 的三个轴（单位向量 $\vec{x}_B, \vec{y}_B, \vec{z}<em>B$）在参考系 $A$ 下的投影坐标。<br>我们将这三个投影出来的列向量横向排开，就得到了旋转矩阵 $R</em>{AB}$**：</p>
+        <p>这里先放一点首页摘要文字：这是一篇关于刚体运动、位姿矩阵、旋量和伴随变换的学习笔记。</p>
+<span id="more"></span>
+
+<p>刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。<br>对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体的姿态。也就是坐标系 $B$ 的三个轴（单位向量 $\vec{x}_B, \vec{y}_B, \vec{z}<em>B$）在参考系 $A$ 下的投影坐标。<br>我们将这三个投影出来的列向量横向排开，就得到了旋转矩阵 $R</em>{AB}$**：</p>
 <p>$$R_{AB} &#x3D; \begin{bmatrix} | &amp; | &amp; | \ {}^A\vec{x}_B &amp; {}^A\vec{y}_B &amp; {}^A\vec{z}_B \ | &amp; | &amp; | \end{bmatrix}$$</p>
 <p>怎么表示不同坐标系的转换呢，如果我们知道一个点在A坐标系下的位置，想通过B坐标系得到这个点在C坐标系下的位置，我们当然可以这样写：<br>$p_B &#x3D; R_{BA} p_A + t_{BA}$<br>$p_C &#x3D; R_{CB} p_B + t_{CB}$<br>但是这样会有一个问题<br>$p_C &#x3D; R_{CB} R_{BA} p_A + R_{CB} t_{BA} + t_{CB}$<br>越往后面，这种计算的复杂度会越来越大。于是，我们导入位姿矩阵T（满足李群）,与齐次坐标$$P_{homogeneous} &#x3D; \begin{bmatrix} x \ y \ z \ 1 \end{bmatrix}$$<br>$$T &#x3D; \begin{bmatrix} R &amp; p \ 0 &amp; 1 \end{bmatrix}$$<br>其中p是在B坐标系下A坐标系原点的位置，大小等同于$t_{BA}$<br>这样，<br>$b &#x3D; T_1 a$<br>$c &#x3D; T_2 b$<br>$c &#x3D; T_2 T_1 a$<br>极大的方便了坐标系的转换。</p>
 <p>现在，我们需要考虑怎么处理转动和平动这两个问题了。<br>直觉的思路是直接把T对时间求导，也就是$$\dot{T} &#x3D; \frac{d}{dt} \begin{bmatrix} R_{SB} &amp; p_{SB} \ 0 &amp; 1 \end{bmatrix} &#x3D; \begin{bmatrix} \dot{R}<em>{SB} &amp; \dot{p}</em>{SB} \ 0 &amp; 0 \end{bmatrix}$$<br>很明显$\dot{p}<em>{SB}$就是刚体在绝对坐标中的平移速度，但是$\dot{R}</em>{SB}$ 我们看不出有什么意义。我们在这里利用R的正交性进行一些数学上的操作：<br>把$$R_{SB} R_{SB}^T &#x3D; I$$<br>两边对时间求导，得到$$\dot{R}<em>{SB} R</em>{SB}^T + R_{SB} \dot{R}<em>{SB}^T &#x3D; 0$$<br>交换一下得到（传送锚点1）<br>$$\dot{R}</em>{SB} R_{SB}^T &#x3D; -(\dot{R}<em>{SB} R</em>{SB}^T)^T$$<br>也就是$\dot{R}<em>{SB} R</em>{SB}^T$ 是一个反对称矩阵，这个矩阵有什么用呢？我们现在找一个绝对坐标系S和一个本体坐标系B，B中刚体上有一个固定点P绕B原点旋转，通过旋转矩阵，我们能这样描述这个点在绝对坐标系中的坐标：$$p_S(t) &#x3D; R_{SB}(t) p_B + t_{SB}$$<br>由于对于坐标系B来说，点P的坐标是固定的，因此$p_b$应当是一个常数。对时间求导，我们能知道他的真实速度$$v_S(t) &#x3D; \dot{p}<em>S(t) &#x3D; \dot{R}</em>{SB}(t) p_B + \dot{t}<em>{SB}$$<br>利用$$p_S - t</em>{SB} &#x3D; R_{SB} p_B$$</p>
@@ -171,7 +186,29 @@
     <div class="article-info article-info-index">
       
       
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
       
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/随笔//" class="article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
 
       
 
@@ -195,6 +232,19 @@
             </div>
         </div>
         
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    目录，不存在的…
+                    </div>
+                </span>
+            </div>
+        </div>
         
     </div>
 </aside>
@@ -321,6 +371,10 @@ MathJax.Hub.Queue(function() {
             <input type="checkbox" q-on="click:toggleTag(e)" q-attr="checked:showTags">
           </label>
           <ul class="article-tag-list" q-show="showTags">
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">随笔</a>
+              </li>
             
             <div class="clearfix"></div>
           </ul>
