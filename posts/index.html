@@ -146,9 +146,1706 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            <section class="welcome-home" style="min-height: 60vh; display: flex; align-items: center; justify-content: center; text-align: center;">
-  <h1 style="font-size: 32px; font-weight: 400; line-height: 1.4; margin: 0;">欢迎来到西川の小屋</h1>
-</section>
+            
+  
+    <article id="post-笔记/transformer/Decoder" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/">Decoder</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/" class="archive-article-date">
+  	<time datetime="2026-05-15T07:02:19.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Decoder-和-Encoder-区别"><a href="#Decoder-和-Encoder-区别" class="headerlink" title="Decoder 和 Encoder 区别"></a>Decoder 和 Encoder 区别</h2><p>encoder负责非线性的提取信息细节，decoder则有两个输入，一部分是encoder提取的原文信息；一方面是decoder以前生成的上文信息。decoder的输出是一个一个的。<br>decoder的block也不同于encoder，他由3个主要结构组成，中间填充Add&amp;Norm。<br>三个核心是Masked Multi-Head Attention，Cross attention，FFN</p>
+<h2 id="Masked-Multi-Head-Attention"><a href="#Masked-Multi-Head-Attention" class="headerlink" title="Masked Multi-Head Attention"></a>Masked Multi-Head Attention</h2><p><strong>流程：</strong> 第一步shifted output：将已输出内容右移一个token，生成一个占位符<code>&lt;SOS&gt;</code> ,这个符号的向量是随机生成的，在训练中，会被推向“开始”含义的词嵌入向量的位置。同时填充大量占位符<code>&lt;PAD&gt;</code>（补全矩阵要求格式） ，通过Padding Mask，在attention中不作为有效单词。<br><strong>第二步：</strong> 还是计算QKV相乘，在计算attention scores之后，加上一个下三角矩阵。</p>
+<script type="math/tex; mode=display">
+\text{MaskedAttention}(Q, K, V) = \text{Softmax}\left(\frac{QK^T + M}{\sqrt{d_k}}\right)V
+</script>
+
+<p>矩阵的形状和$QK^T$ 一样，规则是</p>
+<script type="math/tex; mode=display">
+M_{ij} = \begin{cases} 0 & \text{if } i \geq j \\ -\infty & \text{if } i < j \end{cases}
+</script>
+
+<p>也就是</p>
+<script type="math/tex; mode=display">
+M = \begin{bmatrix} 0 & -\infty & -\infty \\ 0 & 0 & -\infty \\ 0 & 0 & 0 \end{bmatrix}
+</script>
+
+<p><strong>PS：</strong> 为什么是下三角：在$QK^T$ 中，行代表已经输出的token，列代表参考的token。如果i&lt;j，就代表现在的词还没有生成出来，应该被屏蔽（为什么不取等，因为输出右移了）。<br>这样，还没有出现的信息在softmax中化为0，相当于完全没有权重。<br><strong>第三步：</strong> 正常加权</p>
+<h2 id="Cross-Attention"><a href="#Cross-Attention" class="headerlink" title="Cross Attention"></a>Cross Attention</h2><p><strong>说明：</strong> Q为掩码注意力的output生成，KV来自encoder</p>
+<h2 id="为什么训练时不能看到未来-token"><a href="#为什么训练时不能看到未来-token" class="headerlink" title="为什么训练时不能看到未来 token"></a>为什么训练时不能看到未来 token</h2><p>如果训练时能看到，训练之后模型会依赖于看到未来的信息，产生逻辑错误。</p>
+<h2 id="Mask-生成代码"><a href="#Mask-生成代码" class="headerlink" title="Mask 生成代码"></a>Mask 生成代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class to generate a mask</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#need pad_id</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MaskGenerator</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, pad_id=<span class="number">0</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.pad_id = pad_id</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_src_mask</span>(<span class="params">self, src_id</span>):</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment"># 只要不是 PAD 就是有效位 (True)</span></span><br><span class="line"></span><br><span class="line">        src_mask = (src_id != <span class="variable language_">self</span>.pad_id).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> src_mask.<span class="built_in">int</span>()</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_tgt_mask</span>(<span class="params">self, tgt_id</span>):</span><br><span class="line"></span><br><span class="line">        _, tgt_len = tgt_id.shape</span><br><span class="line"></span><br><span class="line">        device = tgt_id.device</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 1. 生成 Padding Mask: 找出哪些位置不是 PAD</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># shape: (Batch, 1, 1, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        pad_mask = (tgt_id != <span class="variable language_">self</span>.pad_id).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. 生成 Causal Mask: 下半三角矩阵 (对角线及以下为 True)</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># shape: (tgt_len, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        causal_mask = torch.tril(torch.ones((tgt_len, tgt_len), device=device)).<span class="built_in">bool</span>()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. 逻辑与运算 (&amp;)</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># PyTorch 的广播机制会自动将 pad_mask 的最后一个维度与 causal_mask 的列对齐</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 结果 shape: (Batch, 1, tgt_len, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        tgt_mask = pad_mask &amp; causal_mask</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> tgt_mask.<span class="built_in">int</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="Decoder-代码"><a href="#Decoder-代码" class="headerlink" title="Decoder 代码"></a>Decoder 代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class for decoder</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input shape: (Batch, Seq_Len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DecoderLayer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, num_heads, middle_len, esp = <span class="number">1e-5</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.hidden_size = hidden_size</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.esp = esp</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.middle_len = middle_len</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.masked_attention =  MultiHeadAttention(hidden_size= hidden_size, num_heads= num_heads)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.cross_attention =  MultiHeadAttention(hidden_size= hidden_size, num_heads= num_heads)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln1 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln2 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln3 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.FNN = FFN(hidden_size= hidden_size, middle_len= middle_len)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, scr, de_in, self_attn_mask=<span class="literal">None</span>, scr_mask=<span class="literal">None</span></span>):</span><br><span class="line"></span><br><span class="line">        de_in_mat = <span class="variable language_">self</span>.masked_attention(de_in, mask = self_attn_mask)</span><br><span class="line"></span><br><span class="line">        de_in_mat_r = de_in + de_in_mat</span><br><span class="line"></span><br><span class="line">        de_in_mat_n = <span class="variable language_">self</span>.ln1(de_in_mat_r)</span><br><span class="line"></span><br><span class="line">        de_in_cat = <span class="variable language_">self</span>.cross_attention(de_in_mat_n, key = scr, value = scr, mask = scr_mask)</span><br><span class="line"></span><br><span class="line">        de_in_cat_r = de_in_mat_n + de_in_cat</span><br><span class="line"></span><br><span class="line">        de_in_cat_n = <span class="variable language_">self</span>.ln2(de_in_cat_r)</span><br><span class="line"></span><br><span class="line">        de_in_F = <span class="variable language_">self</span>.FNN(de_in_cat_n)</span><br><span class="line"></span><br><span class="line">        de_in_F_r = de_in_F + de_in_cat_n</span><br><span class="line"></span><br><span class="line">        de_in_F_n = <span class="variable language_">self</span>.ln3(de_in_F_r)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> de_in_F_n</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/transformer/Encoder" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/">Encoder</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/" class="archive-article-date">
+  	<time datetime="2026-05-15T07:00:52.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Encoder"><a href="#Encoder" class="headerlink" title="Encoder"></a>Encoder</h2><p><strong>作用：</strong> 更深层的提取一个序列中的信息。<br>一个encoder由数个（很多）encoder-block构成，每一个block的结构完全相同的子层组成：一个是多头注意力；一个是前馈神经网络。中间再由残差链接连接（Residual Connection），输出经过一个层归一化（Layer-Norm）<br>残差连接：公式很简单</p>
+<script type="math/tex; mode=display">
+y = H (x, WH) + x
+</script>
+
+<p>作用是为了减少提取信息中信息的缺失，再将原始信息与处理信息相加，以突出特征信息的基础上保留原始信息。本质是通过求导时保持一个1项的存在，避免梯度消失。<br>层归一化：对每一个词进行一次归一化。<br><strong>先算均值：</strong></p>
+<script type="math/tex; mode=display">
+\mu = \frac{1}{D} \sum_{j=1}^{D} x_j
+</script>
+
+<p><strong>再算方差：</strong></p>
+<script type="math/tex; mode=display">
+\sigma^2 = \frac{1}{D} \sum_{j=1}^{D} (x_j - \mu)^2
+</script>
+
+<p><strong>再标准化：</strong> （$\epsilon$是一个微小常数，防止方差为0时报错)</p>
+<script type="math/tex; mode=display">
+\hat{x}_j = \frac{x_j - \mu}{\sqrt{\sigma^2 + \epsilon}}
+</script>
+
+<p><strong>为了防止经过ReLU的时候损失一半信息，进行放缩平移：</strong></p>
+<script type="math/tex; mode=display">
+y_j = \gamma_j \hat{x}_j + \beta_j
+</script>
+
+<p>其中$\gamma_j$和$\beta_j$是需要学习的参数。<br><strong>目的：</strong> 减少模型对输入的敏感度，比如有一个数据集，是1w量级对零点几，不标准化就可能导致1w量级的数据变化完全盖过零点几量级的数据变化。经过标准化，使这两个的影响平等化了。<br>Add&amp;Norm：残差链接+层归一化</p>
+<h3 id="前馈神经网络"><a href="#前馈神经网络" class="headerlink" title="前馈神经网络"></a>前馈神经网络</h3><p>（Feed-Forward Network, FFN）：一个至少有一个隐藏层；全连接；有非线性激活的网络。最经典的FFN就是一个Affine+ReLU+Affine的MLP。现代FFN还会加门控装置。</p>
+<h2 id="Encoder-流程"><a href="#Encoder-流程" class="headerlink" title="Encoder 流程"></a>Encoder 流程</h2><p>位置编码之后的数据送入Encoder，在第一个block中：<br>multi-heads attention-&gt;residual connect-&gt;norm-&gt;FNN-&gt;<br>residual connect-&gt;norm-&gt;下个block</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class for muliti-head attention</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input X shape: (Batch, Seq_Len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input Config, include: hidden_size, num_heads</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#W_q, W_k, W_v: (Hidden_Size, D_k)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output: (Batch, Seq_Len, Hidden_Size)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MultiHeadAttention</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, num_heads</span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">assert</span> hidden_size % num_heads == <span class="number">0</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.hidden_size = hidden_size</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.d_k = hidden_size // num_heads</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_q = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_k = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_v = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_o = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">multi_head_attention</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        batch_size, Seq_Len, _ = s.shape</span><br><span class="line"></span><br><span class="line">        Q = <span class="variable language_">self</span>.W_q(s) <span class="comment">#Q.shape ([batch, Seq_Len, hidden_size])</span></span><br><span class="line"></span><br><span class="line">        K = <span class="variable language_">self</span>.W_k(s)</span><br><span class="line"></span><br><span class="line">        V = <span class="variable language_">self</span>.W_v(s)</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        Q = Q.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        K = K.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        V = V.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        K_T = K.transpose(-<span class="number">1</span>, -<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        attention_scores = Q @ K_T <span class="comment">#shape ([batch, num_heads, Seq_Len, Seq_Len])</span></span><br><span class="line"></span><br><span class="line">        scaled_a_s = attention_scores / math.sqrt(<span class="variable language_">self</span>.d_k)</span><br><span class="line"></span><br><span class="line">        attention_values = torch.softmax(scaled_a_s, dim = <span class="number">2</span>) <span class="comment">#shape ([batch, Seq_Len, Seq_Len])</span></span><br><span class="line"></span><br><span class="line">        target = attention_values @ V <span class="comment">#shape ([batch, Seq_len, d_k])</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        target = target.tranpose(<span class="number">1</span>, <span class="number">2</span>).contiguous().reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.hidden_size)</span><br><span class="line"></span><br><span class="line">        out = <span class="variable language_">self</span>.W_o(target)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> out</span><br><span class="line"></span><br><span class="line"><span class="comment">#Layer-Norm</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input source(batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#class need hidden_size, esp</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Layer_Norm</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, esp = <span class="number">1e-5</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.gamma = nn.Parameter(torch.ones(hidden_size))</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.beta = nn.Parameter(torch.zero(hidden_size))</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.esp = esp</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        mean = s.mean(dim = -<span class="number">1</span>, keepdim = <span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">        var = s.var(dim = -<span class="number">1</span>, keepdim = <span class="literal">True</span>, unbiased = <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">        s_norm = (s -mean) / torch.sqrt(var + <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s_norm</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="comment">#a class for FFN</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input source(batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#need hidden_size, middle_len</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">FFN</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, middle_len</span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.Linear1 = nn.Linear(hidden_size, middle_len)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.Linear2 = nn.Linear(middle_len, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ReLU = nn.ReLU()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        batch_size, seq_len, hidden_size = s.shape</span><br><span class="line"></span><br><span class="line">        s_L1 = <span class="variable language_">self</span>.Linear1(s)</span><br><span class="line"></span><br><span class="line">        s_L1R = <span class="variable language_">self</span>.ReLU(s_L1)</span><br><span class="line"></span><br><span class="line">        s_L2 = <span class="variable language_">self</span>.Linear2(s_L1R)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s_L2</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="comment">#a class for encoder</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input shape: (Batch, Seq_Len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EncoderLayer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, num_heads, middle_len, esp = <span class="number">1e-5</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.hidden_size = hidden_size</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.esp = esp</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.middle_len = middle_len</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.MH =  MultiHeadAttention(hidden_size= hidden_size, num_heads= <span class="number">8</span>)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.LN1 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.LN2 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.FNN = FFN(hidden_size= hidden_size, middle_len= <span class="number">32</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        s_at = <span class="variable language_">self</span>.MH(s)</span><br><span class="line"></span><br><span class="line">        s_at_r = s + s_at</span><br><span class="line"></span><br><span class="line">        s_at_n = <span class="variable language_">self</span>.LN1(s_at_r)</span><br><span class="line"></span><br><span class="line">        s_F = <span class="variable language_">self</span>.FNN(s_at_n)</span><br><span class="line"></span><br><span class="line">        s_F_r = s_F + s_at_n</span><br><span class="line"></span><br><span class="line">        s_F_n = <span class="variable language_">self</span>.LN2(s_F_r)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s_F_n</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/transformer/Position-encoder" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/">Position-encoder</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/" class="archive-article-date">
+  	<time datetime="2026-05-15T07:00:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Transformer-为什么要位置编码"><a href="#Transformer-为什么要位置编码" class="headerlink" title="Transformer 为什么要位置编码"></a>Transformer 为什么要位置编码</h2><p>对于attention机制而言，本身的输入不包含位置信息。而位置信息在语言中有很重要的地位，所以我们需要通过一定的方式来表示一个序列的位置与相对位置信息。<br>什么是好的位置编码：应该能反应一个序列的绝对位置，也就是每一个顺序的位置编码是独一无二的；其次，相同的相对距离对不同长度序列的影响应该是相同的；编码要处处确定而且有界。</p>
+<h2 id="Sinusoidal-Position-Encoding"><a href="#Sinusoidal-Position-Encoding" class="headerlink" title="Sinusoidal Position Encoding"></a>Sinusoidal Position Encoding</h2><p>这是经典transformer 的位置编码，编码公式是：</p>
+<script type="math/tex; mode=display">
+PE_{(pos,2i)}=\sin\left(\frac{pos}{10000^{\frac{2i}{d}}}\right)
+</script>
+
+<script type="math/tex; mode=display">
+PE_{(pos,2i+1)}=\cos\left(\frac{pos}{10000^{\frac{2i}{d}}}\right)
+</script>
+
+<p><strong>公式解释：</strong> PE是针对一个序列中某个position的某一个维度的位置编码，2i与2i+1均指词向量维度（为了公式美观奇偶分开处理），这个公式的优点是处处可导，数值确定，取值范围在-1~1之间。同时，对于pos与pos+k，可以证明（和差化积），相对位置对任何pos的影响是一样的。<br><strong>证明：</strong></p>
+<script type="math/tex; mode=display">
+PE_{(pos+k,2i)}=\sin\left(\frac{pos+k}{10000^{\frac{2i}{d}}}\right)
+</script>
+
+<p>不妨令$\frac{pos}{10000\frac{2i}{d}} &#x3D; a$, $\frac{pos + k}{10000\frac{2i}{d}} &#x3D; b$ 则</p>
+<script type="math/tex; mode=display">
+PE_{(pos+k,2i)} = \sin(a)\cos(b) + \cos(a)\sin(b)
+</script>
+
+<p>可以发现，对于任何pos，k的作用是单独作用的，也就是：</p>
+<script type="math/tex; mode=display">
+\begin{pmatrix} PE_{(pos+k, 2i)} \\ PE_{(pos+k, 2i+1)} \end{pmatrix} = \begin{pmatrix} \cos(\omega_i \cdot k) & \sin(\omega_i \cdot k) \\ -\sin(\omega_i \cdot k) & \cos(\omega_i \cdot k) \end{pmatrix} \begin{pmatrix} PE_{(pos, 2i)} \\ PE_{(pos, 2i+1)} \end{pmatrix}
+</script>
+
+<p><strong>为什么是10000：</strong> 1w这个数值可以根据词向量的不同维改变周期，靠前维度周期会非常小，能感知细小的位置变化，而靠后周期非常大，能感知长距离位置的变化。<br><strong>缺点：</strong> 外推性性差：编码手段是固定函数，及其依赖固定长度序列的权重函数，导致处理不同长度的文本的能力很差。<br>相对位置处理不足：由于$Score_{i,j} &#x3D; Q_i K_j^T$<br>展开后$Score_{i,j} &#x3D; (x_i W_Q + p_i W_Q) (x_j W_K + p_j W_K)^T$，再展开</p>
+<script type="math/tex; mode=display">
+Score_{i,j} = \underbrace{x_i W_Q W_K^T x_j^T}_{\text{word-word}} + \underbrace{x_i W_Q W_K^T p_j^T}_{\text{word-position}} + \underbrace{p_i W_Q W_K^T x_j^T}_{\text{position-word}} + \underbrace{p_i W_Q W_K^T p_j^T}_{\text{position-position}}
+</script>
+
+<p>发现，在位置对位置这一项之外，还混入了位置对词，导致很多无意义噪声，而且，由于cos的偶对称性，相对位置往往是绝对位置：</p>
+<script type="math/tex; mode=display">
+\sin(\omega i) \cdot \sin(\omega j) + \cos(\omega i) \cdot \cos(\omega j) = \cos(\omega i - \omega j) = \cos(\omega (i - j))
+</script>
+
+<h2 id="Learnable-Positional-Embedding-的差异"><a href="#Learnable-Positional-Embedding-的差异" class="headerlink" title="Learnable Positional Embedding 的差异"></a>Learnable Positional Embedding 的差异</h2><p>LPE原理很简单，在最开始，生成一个由n个长度等同于token embeddin构成的矩阵，这个矩阵可以被反向传播更新数值。在输入阶段，选择数量等于seq_len的子矩阵与token_embedding相加。<br>优点是可以根据实际情况调整不同位置的权重矩阵，在一定范围内表达更灵活，表现优于SPE；实现简单。<br>缺点是外推性极差，超过训练长度的文本相当于进入了随机生成的矩阵。</p>
+<h2 id="RoPE"><a href="#RoPE" class="headerlink" title="RoPE"></a>RoPE</h2><p><strong>核心思路：</strong> 利用矩阵乘法的不交换性，将位置编码变成一种乘法。先通过旋转矩阵对Q,K进行一遍操作，再直接输入到attention里。<br>首先对Q,K</p>
+<script type="math/tex; mode=display">
+f_q(q, m) = R_{\Theta, m}^d q
+</script>
+
+<p>之后直接带入attention原式，展开后有</p>
+<script type="math/tex; mode=display">
+\begin{pmatrix} q'_0 \\ q'_1 \\ q'_2 \\ q'_3 \\ \vdots \\ q'_{d-2} \\ q'_{d-1} \end{pmatrix} = \begin{pmatrix} \cos(m\theta_0) & -\sin(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\ \sin(m\theta_0) & \cos(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\ 0 & 0 & \cos(m\theta_1) & -\sin(m\theta_1) & \cdots & 0 & 0 \\ 0 & 0 & \sin(m\theta_1) & \cos(m\theta_1) & \cdots & 0 & 0 \\ \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & 0 & 0 & \cdots & \cos(m\theta_{d/2-1}) & -\sin(m\theta_{d/2-1}) \\ 0 & 0 & 0 & 0 & \cdots & \sin(m\theta_{d/2-1}) & \cos(m\theta_{d/2-1}) \end{pmatrix} \begin{pmatrix} q_0 \\ q_1 \\ q_2 \\ q_3 \\ \vdots \\ q_{d-2} \\ q_{d-1} \end{pmatrix}
+</script>
+
+<p>其中，$\theta &#x3D; 10000^{\frac{2i}{d}}$</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#create a layer to encode position information</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input source(batch, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">sinusoidal_RE</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, max_len, hidden_size</span>) :</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        pe = torch.zeros(max_len, hidden_size)</span><br><span class="line"></span><br><span class="line">        position = torch.arange(max_len, dtype= <span class="variable language_">self</span>.<span class="built_in">float</span>).unsqueeze(<span class="number">1</span>) <span class="comment">#shape(max_len, 1)</span></span><br><span class="line"></span><br><span class="line">        div = (torch.exp( torch.arange(<span class="number">0</span>, hidden_size, <span class="number">2</span>, dtype= <span class="variable language_">self</span>.<span class="built_in">float</span>).unsqueeze(<span class="number">0</span>) / hidden_size * math.log(<span class="number">1</span> / <span class="number">10000</span>)))</span><br><span class="line"></span><br><span class="line">        angle = position @ div</span><br><span class="line"></span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(angle)</span><br><span class="line"></span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(angle[:, :pe[:, <span class="number">1</span>::<span class="number">2</span>].shape[<span class="number">1</span>]])</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.register_buffer = (<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        batch, seq_len, hidden_size = s.shape</span><br><span class="line"></span><br><span class="line">        p = <span class="variable language_">self</span>.pe[:seq_len, :hidden_size].unsqueeze(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">        e = s + p</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> e</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/transformer/Multi-attention" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/">Multi-attention</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/" class="archive-article-date">
+  	<time datetime="2026-05-15T06:59:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Self-Attention-和-Cross-Attention-的区别"><a href="#Self-Attention-和-Cross-Attention-的区别" class="headerlink" title="Self-Attention 和 Cross-Attention 的区别"></a>Self-Attention 和 Cross-Attention 的区别</h2><p>self-attention：每一个词都有自己的QKV，QKV均来自于同一个序列。作用是捕捉同一个序列内上下文信息和信息依赖关系。用在模型的Encoder部分。<br>cross-attention：不同序列之间的注意力，Q来自序列A，KV来自序列B，除此之外，计算流程并无区别。作用是对齐两个序列的语义关系，常用在模型的Decoder部分。也是多模态中对齐不同种类信息的关节结构。</p>
+<h2 id="Multi-Head-Attention-的作用"><a href="#Multi-Head-Attention-的作用" class="headerlink" title="Multi-Head Attention 的作用"></a>Multi-Head Attention 的作用</h2><p>词向量的维数反应了一个词的某些信息。多头注意力最直观的作用，就是针对不同维度的信息单独特化，最后再拼接在一起，对信息的处理最大化。而传统的单头注意力往往只能反应最直观的维度。<br>从其他角度也有很直观的理解，比如类比到dropout，为系统提供了一种冗余能力，提高了鲁棒性；多头注意力有多个softmax，在单头中，我们不太允许出现极其锐利的峰值，但多头中，我们针对某个维度可能可以提取出很锋利的信息特征。</p>
+<h3 id="多头拆分"><a href="#多头拆分" class="headerlink" title="多头拆分"></a>多头拆分</h3><p>这个很好理解，我们设置要几个头，根据头的数量和词向量的维度，确定出每一个头的词向量维度。例子：假如我现在有1个有20token的句子，每个token的词向量有100个维度，我们设定分成4个头。拆分后，我们会得到4个20token的25维的句子。</p>
+<h3 id="拼接"><a href="#拼接" class="headerlink" title="拼接"></a>拼接</h3><p>这一步就是将加权之后的4个头的Target，重新拼回100维</p>
+<h3 id="线性映射"><a href="#线性映射" class="headerlink" title="线性映射"></a>线性映射</h3><p>由于这四个头的内容目前关联性还不大，我们可以通过一个矩阵，让他们的信息重新交互，常见的做法是乘以一个输出权重矩阵$W^o$</p>
+<h2 id="多头注意力流程"><a href="#多头注意力流程" class="headerlink" title="多头注意力流程"></a>多头注意力流程</h2><p>多头拆分——&gt;单头attention——&gt;拼接——&gt;线性映射</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class for muliti-head attention</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input X shape: (Batch, Seq_Len, Hidden_Size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input Config, include: hidden_size, num_heads</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#W_q, W_k, W_v: (Hidden_Size, D_k)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output: (Batch, Seq_Len, Hidden_Size)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MultiHeadAttention</span>(torch.nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, num_heads</span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">assert</span> hidden_size % num_heads == <span class="number">0</span></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.hidden_size = hidden_size</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.d_k = hidden_size // num_heads</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_q = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_k = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_v = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.W_o = nn.Linear(hidden_size, hidden_size)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">multi_head_attention</span>(<span class="params">self, s</span>):</span><br><span class="line"></span><br><span class="line">        batch_size, Seq_Len, _ = s.shape</span><br><span class="line"></span><br><span class="line">        Q = <span class="variable language_">self</span>.W_q(s) <span class="comment">#Q.shape ([batch, Seq_Len, hidden_size])</span></span><br><span class="line"></span><br><span class="line">        K = <span class="variable language_">self</span>.W_k(s)</span><br><span class="line"></span><br><span class="line">        V = <span class="variable language_">self</span>.W_v(s)</span><br><span class="line"></span><br><span class="line">        Q = Q.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        K = K.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        V = V.reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.num_heads, <span class="variable language_">self</span>.d_k).tranpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        K_T = K.transpose(-<span class="number">1</span>, -<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        attention_scores = Q @ K_T <span class="comment">#shape ([batch, num_heads, Seq_Len, Seq_Len])</span></span><br><span class="line"></span><br><span class="line">        scaled_a_s = attention_scores / math.sqrt(<span class="variable language_">self</span>.d_k)</span><br><span class="line"></span><br><span class="line">        attention_values = torch.softmax(scaled_a_s, dim = <span class="number">2</span>) <span class="comment">#shape ([batch, Seq_Len, Seq_Len])</span></span><br><span class="line"></span><br><span class="line">        target = attention_values @ V <span class="comment">#shape ([batch, Seq_len, d_k])</span></span><br><span class="line"></span><br><span class="line">        target = target.tranpose(<span class="number">1</span>, <span class="number">2</span>).contiguous().reshape(batch_size, Seq_Len, <span class="variable language_">self</span>.hidden_size)</span><br><span class="line"></span><br><span class="line">        out = <span class="variable language_">self</span>.W_o(target)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> out</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/transformer/Attention" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/">Attention</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/" class="archive-article-date">
+  	<time datetime="2026-05-15T06:59:03.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Attention-基本原理"><a href="#Attention-基本原理" class="headerlink" title="Attention 基本原理"></a>Attention 基本原理</h2><p>attention机制基本由三个基本矩阵，Q（Query），K（Key），V（Value）组成，每个矩阵都是词向量与一个投影矩阵相乘得来的，而这些投影矩阵的值，正式我们训练的目标。在attention层中，输入X经过三个不同的生成矩阵得到Q,K,V（每个词的QKV不同）。第一步，Q与K计算相关度，得到Scores，这一步评估的是每一个词与整句话的相关度程度，每个词的Q可以理解成这个词需要从别的词中获取什么信息，K可以理解成我可以为别的词提供什么信息。第二步，上一步获得的Scores经过softmax归一化，获得句子中每个词对当前词的权重系数，比如“我是中国人”中如果输入的是“人”的Q，那么权重系数中“中国”对应的系数会很大。第三步，权重系数和句子中所有的V相乘后相加，得到Z，这里V反应了每个词的含义，Z则是在这个句子中，原来词的修正的含义，称为上下文相关词向量。<br>attention也可以换一个角度理解，通过处理手段弱化了不值得投入资源的信息，从而节省了算力，实现了资源的动态调配。</p>
+<h2 id="Attention-公式推导"><a href="#Attention-公式推导" class="headerlink" title="Attention 公式推导"></a>Attention 公式推导</h2><script type="math/tex; mode=display">
+Attention(Q,K,V)=softmax(\frac{QK^T}{\sqrt{d_k}})V
+</script>
+<p>我们先不进行批操作，假如一个句子有n个词，输入的句子就是（n，d）的矩阵，经过$W_Q$ ,$W_K$ , $W_V$ 投影矩阵的投影，得到了Q（n，$d_k$ ),K（n，$d_k$ ),和V（n，$d_v$ )，第一步Q与K计算相关度，也就是Q$K^T$ ,获得attention scores，为了防止点积导致的方差爆炸，使数据直接大小差异过大，所以除以$\sqrt{d_k}$ 缩小方差回1（scaled），再进行softmax归一化，乘以V，就得到了Z。</p>
+<h2 id="为什么要-scale"><a href="#为什么要-scale" class="headerlink" title="为什么要 scale"></a>为什么要 scale</h2><p>如果不进行scaled，在Q$K^T$ 的时候，因为$q \cdot k &#x3D; \sum_{i&#x3D;1}^{d_k} q_i k_i$  ，此时的方差$\text{Var}(XY) &#x3D; \text{Var}(X)\text{Var}(Y) + \text{Var}(X)E(Y)^2 + \text{Var}(Y)E(X)^2$），若$\text{Var}(q_i k_i) &#x3D; 1 \times 1 + 1 \times 0^2 + 1 \times 0^2 &#x3D; 1$ 则$\text{Var}(q \cdot k) &#x3D; \sum_{i&#x3D;1}^{d_k} \text{Var}(q_i k_i) &#x3D; d_k$ ，当$d_k$ 很大时，点积之后的方差将会非常大，softmax的公式决定，大的更大，小的更小，如果分布的方差太大，权重系数会出现只有最相关的词的权重系数为1，其他的全为0.求梯度之后$\frac{\partial \mathbf{y}}{\partial \mathbf{x}} &#x3D; \text{diag}(\mathbf{y}) - \mathbf{y}\mathbf{y}^\top$ ，如果只有最相关的词的权重系数为1，其他的全为0，此时梯度将会下降到0，也就是网络将失去学习能力。</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">softmax</span>(<span class="params">x</span>):</span><br><span class="line"></span><br><span class="line">    x = np.exp(x) / np.<span class="built_in">sum</span>(np.exp(x) , axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;softmax : &#x27;</span>, x.shape)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> x</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">Q, K, V</span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment">#计算注意力得分</span></span><br><span class="line"></span><br><span class="line">    scores = np.dot(Q, K.T)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;scores : &#x27;</span>, scores.shape)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#scale</span></span><br><span class="line"></span><br><span class="line">    d_k = K.shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    scores_scaled = scores / np.sqrt(d_k)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;scores_scaled : &#x27;</span>, scores_scaled.shape)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#softmax</span></span><br><span class="line"></span><br><span class="line">    weights = softmax(scores_scaled)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;weights : &#x27;</span>, weights.shape)</span><br><span class="line"></span><br><span class="line">    <span class="comment">#求和</span></span><br><span class="line"></span><br><span class="line">    Z = np.dot(weights, V)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> Z</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/mujoco自用/建模方法" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/">建模方法</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/" class="archive-article-date">
+  	<time datetime="2026-05-15T06:49:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>加载方法：</strong> Mujoco可以读取MJCF或者URDF格式的纯文本XML文件，MJCF 和 URDF 文件使用 <code>mj_loadXML</code> 加载，而 MJB 文件则使用 <code>mj_loadModel</code> 加载。<br><strong>加载过程：</strong> XML通过 TinyXML 解析器将其解析为文档对象模型（DOM），然后对该 DOM 进行处理，并将其转换为高级的 <code>mjSpec</code> 对象。一个有效的 XML 文件具有唯一的顶级元素。对于 MJCF，该元素必须是 <code>mujoco</code>；对于 URDF，则必须是 <code>robot</code></p>
+<p><strong>编译过程：</strong> 一旦通过加载 MJCF 文件、URDF 文件或通过编程方式创建了高级 <code>mjSpec</code> 对象，它就会被编译成 <code>mjModel</code>。一旦遇到错误编译将终止，生成的错误信息包含 XML 文件中的行号和列号。解析器使用自定义的 schema（模式）来确保文件结构、元素和属性的有效性。随后，编译器会应用许多额外的语义检查。最后，对编译后的模型执行一个仿真步，并拦截任何运行时错误。后者是通过（临时）将 <code>mju_user_error</code> 设置为指向一个能抛出 C++ 异常的函数来实现的</p>
+<p><strong>保存模型：</strong> MJCF 模型可以由多个（被包含的）XML 文件以及从 XML 引用的网格、高度场和纹理组成。编译后，所有这些文件的内容会被整合到 <code>mjModel</code> 中，并可以通过 <code>mj_saveModel</code> 保存为二进制的 MJB 文件。<br>也可以通过 <code>mj_saveLastXML</code> 将编译后的 <code>mjSpec</code> 保存为 MJCF 格式。需要注意的是，编译后的模型无法进行结构性更改（只能改数值，不能改结构）。导出的 XML 结构可能和你最初手写的长得不一样。在导出的文件里，所有的坐标都会被强制转换为局部坐标，每一个刚体的位置、方向、惯性张量都会被毫无保留地明确写出来</p>
+<p><strong>MJCF建模：</strong> MJCF 文件的主体部分是由嵌套的 <code>body</code> 元素构成的 XML 树，顶级的 <code>body</code> 是特殊的，称为 <code>worldbody</code>。在 MJCF 中，从 XML 的角度看，子 <code>body</code> 就字面意义上是父 <code>body</code> 的子元素。<br>当在一个 <code>body</code> 内部定义 <code>joint</code> 时，其作用不是连接父 body 和子 body，而是在它们之间创建运动自由度。如果某个 <code>body</code> 内部没有定义任何 <code>joint</code>，则该 <code>body</code> 与其父 body 固连（焊接）。MJCF 中的一个 <code>body</code> 可以包含多个 <code>joint</code>，因此无需引入虚拟 body 来创建复合关节。只需在同一个 <code>body</code> 内部定义组成所需复合关节的所有基本关节即可。例如，可以使用两个滑块关节和一个铰链关节来模拟一个在平面内运动的 body。</p>
+<h2 id="默认设置"><a href="#默认设置" class="headerlink" title="默认设置"></a>默认设置</h2><p>MuJoCo 根据以下优先级（从高到低）来决定物体的最终颜色：</p>
+<ol>
+<li><p><strong>直接定义（显式赋值）：</strong> 直接在物体标签上写的属性（如 <code>rgba=&quot;...&quot;</code>）。</p>
+</li>
+<li><p><strong>直接指定类（显式类）：</strong> 在物体标签上指明使用哪个 class（如 <code>class=&quot;...&quot;</code>）。</p>
+</li>
+<li><p><strong>父级管辖权（子类继承）：</strong> 包含该物体的父级节点指定的 <code>childclass=&quot;...&quot;</code>。</p>
+</li>
+<li><p><strong>全局默认：</strong> 什么都不写时，默认使用的第一个顶级 class。<br><code>&lt;default&gt;</code> 标签里定义的所有 <code>&lt;geom&gt;</code> 或 <code>&lt;body&gt;</code>，都不是物理世界中真实存在的东西，它们是“虚拟元素”（幽灵）。它们不会在仿真中产生任何碰撞、重力或渲染画面。<br>如果你对 <code>inertia</code> 或 <code>mass</code> 什么都不写（处于特殊的<strong>未定义状态</strong>），编译器会利用该物体绑定的几何体（geom）的形状和密度，用微积分<strong>自动帮你推导</strong>出精确的质量和惯性张量，但如果不小心修改了，将会失去这个功能。</p>
+</li>
+</ol>
+<p><strong>坐标系：</strong> 动力学树中所有坐标均是自身坐标系。如果 Body B 嵌套在 Body A 内部（B 是 A 的子级），那么 B 所填写的坐标，是相对于 A 的中心点（原点）的；几何体 (<code>geom</code>)、关节 (<code>joint</code>)、传感器测点 (<code>site</code>)、相机 (<code>camera</code>) 和光源 (<code>light</code>) 这些“附属组件”，它们的位置都是<strong>相对于包裹它们的那个 Body 的原点</strong>的。</p>
+<p><strong>坐标系朝向：</strong> 尽管底层运算都是四元数，但是mujoco提供了五种描述姿态的方式：</p>
+<h4 id="①-quat-四元数"><a href="#①-quat-四元数" class="headerlink" title="① quat (四元数)"></a>① <code>quat</code> (四元数)</h4><ul>
+<li><strong>输入:</strong> <code>quat=&quot;w x y z&quot;</code> (默认是 <code>&quot;1 0 0 0&quot;</code>，代表不旋转)。</li>
+<li><strong>适用场景:</strong> 你已经通过代码（比如 Python 或 C++ 的数学库）计算好了旋转，直接填入即可。这是官方最推荐的方式，因为它不需要编译器做任何转换，加载最快。</li>
+</ul>
+<h4 id="②-axisangle-轴角"><a href="#②-axisangle-轴角" class="headerlink" title="② axisangle (轴角)"></a>② <code>axisangle</code> (轴角)</h4><ul>
+<li><strong>输入:</strong> <code>axisangle=&quot;x y z a&quot;</code> (代表绕着向量 <script type="math/tex">(x, y, z)</script> 旋转 <script type="math/tex">a</script> 角度)。</li>
+<li><strong>物理直觉:</strong> 这非常符合刚体力学中的指数坐标（Exponential Coordinates）和右手法则。大拇指指向 <script type="math/tex">(x, y, z)</script> 向量的方向，四指弯曲的方向就是旋转方向。</li>
+<li><strong>适用场景:</strong> 模拟单一关节的旋转（例如铰链绕特定轴转动一定角度）时非常直观。</li>
+</ul>
+<h4 id="③-euler-欧拉角"><a href="#③-euler-欧拉角" class="headerlink" title="③ euler (欧拉角)"></a>③ <code>euler</code> (欧拉角)</h4><ul>
+<li><strong>输入:</strong> <code>euler=&quot;roll pitch yaw&quot;</code> (绕 X、Y、Z 轴的旋转角度)。</li>
+<li><strong>适用场景:</strong> 最符合人类日常空间直觉的方式，常用于设置摄像机角度或初始摆放位置。</li>
+<li><strong>注意:</strong> 旋转的先后顺序取决于全局的 <code>compiler/eulerseq</code> 设置（默认通常是 xyz）。</li>
+</ul>
+<h4 id="④-xyaxes-指定-X-和-Y-轴朝向"><a href="#④-xyaxes-指定-X-和-Y-轴朝向" class="headerlink" title="④ xyaxes (指定 X 和 Y 轴朝向)"></a>④ <code>xyaxes</code> (指定 X 和 Y 轴朝向)</h4><ul>
+<li><strong>输入:</strong> <code>xyaxes=&quot;x1 y1 z1 x2 y2 z2&quot;</code> (前三个数是目标 X 轴的指向，后三个是目标 Y 轴的指向)。</li>
+<li><strong>机制:</strong> 给定 X 和 Y 后，Z 轴会自动通过叉乘（Cross-product）计算出来。</li>
+<li><strong>适用场景:</strong> 需要极其精确地对齐坐标系时。比如要把机械臂的末端执行器（End-effector）完美对齐到桌面的某个斜面上。</li>
+</ul>
+<h4 id="⑤-zaxis-指定-Z-轴朝向"><a href="#⑤-zaxis-指定-Z-轴朝向" class="headerlink" title="⑤ zaxis (指定 Z 轴朝向)"></a>⑤ <code>zaxis</code> (指定 Z 轴朝向)</h4><ul>
+<li><strong>输入:</strong> <code>zaxis=&quot;x y z&quot;</code>。</li>
+<li><strong>机制:</strong> 编译器会计算一个“最小旋转”，把物体原本朝上 (0,0,1) 的 Z 轴，掰到你指定的 <script type="math/tex">(x, y, z)</script> 方向上。</li>
+<li><strong>适用场景:</strong> 专门针对<strong>具有旋转对称性的几何体</strong>（如圆柱体 <code>cylinder</code>、胶囊体 <code>capsule</code>、球体）或者<strong>光源</strong>。比如一根圆柱体，你只关心它指向哪里，不关心它自身绕中轴转了多少度，用 <code>zaxis</code> 就极其方便。</li>
+</ul>
+<h2 id="求解器参数"><a href="#求解器参数" class="headerlink" title="求解器参数"></a>求解器参数</h2>
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/mujoco自用/总览" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/">总览</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/" class="archive-article-date">
+  	<time datetime="2026-05-12T16:57:25.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-13</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="模拟数据形式"><a href="#模拟数据形式" class="headerlink" title="模拟数据形式"></a>模拟数据形式</h2><p><strong>mjModel</strong>： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。<br><strong>mjData</strong> ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。<br>mjModel 由编译器构建。mjData 在运行时根据给定的 mjModel 构建。顶层API也体现这种分离</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mj_step</span><span class="params">(<span class="type">const</span> mjModel* m, mjData* d)</span>;</span><br></pre></td></tr></table></figure>
+<p><strong>Mujoco特点：</strong> 可视化的GUI；并行计算（结构岛和岛休眠）；建模语言MJCF（一种高度优化的XML）；自带宏用来生成柔性材料； 支持引擎插件</p>
+<p><strong>Mujoco的文件组织形式：</strong> 在抽象层，我们给MJCF或者URDF，在内存中会变成mjSpec（一个C组织体）；在底层，XML会转化成二进制文件MJB，可以提高读取速度，引擎使用的是mjModel（一种编译后的C结构体），运行时全是mjModel在跑。<br>mjSpec 这个 C 结构体与 MJCF 文件格式一一对应。XML 加载器解析 MJCF 或 URDF 文件，创建相应的 mjSpec 并将其编译为 mjModel。用户可以通过编程方式创建 mjSpec，然后将其保存为 MJCF 文件或直接编译。</p>
+<p>（文本编辑器）→ MJCF&#x2F;URDF 文件 →（MuJoCo 解析器 → mjSpec → 编译器）→ mjModel</p>
+<p>（用户代码）→ mjSpec →（MuJoCo 编译器）→ mjModel</p>
+<p>MJB 文件 →（模型加载器）→ mjModel</p>
+<p>函数 mj_step 是顶层函数，用于将仿真状态推进一个时间步。</p>
+<h2 id="每个模型都有三个选项可以修改"><a href="#每个模型都有三个选项可以修改" class="headerlink" title="每个模型都有三个选项可以修改"></a>每个模型都有三个选项可以修改</h2><p><strong>mjOption：</strong> 该结构体包含所有会影响物理仿真的选项。它用于选择算法并设置其参数、启用或禁用仿真流程中的不同部分，以及调整系统级别的物理属性（如重力）。<br><strong>mjVisual：</strong> 该结构体包含所有可视化选项。还有额外的 OpenGL 渲染选项，但这些选项与会话相关，不属于模型的一部分。<br><strong>mjStatistic：</strong> 该结构体包含由编译器计算的关于模型的统计数据：物体平均质量、模型的空间范围等。包含这些信息既是为了提供参考，也是因为可视化工具会使用它来进行自动缩放。<br>MuJoCo 可以从 OBJ 文件和二进制 STL 文件加载三角化网格。可以使用 MeshLab 等软件从其他格式进行转换。比如把CAD 模型（如 STEP 或 IGES 格式）通过MeshLab 等软件将这些 CAD 文件转换为 MuJoCo 支持的 OBJ 或 STL 格式，就可以得到和现实世界里的一模一样的模型<br>高度场可以从 PNG 文件（内部转换为灰度图）加载，出于渲染和碰撞检测的目的，网格矩形会自动进行三角剖分，几何体的碰撞只选取64个影响最大的接触点来计算。</p>
+<h2 id="常见报错"><a href="#常见报错" class="headerlink" title="常见报错"></a>常见报错</h2><p><strong>发散：</strong> 当状态分量迅速趋向于无穷大时，就会发生仿真发散。在 MuJoCo 中，这通常表现为 <code>mjWARN_BADQACC</code> 警告。这是速度（大步长）与稳定性（小步长）之间BB博弈。</p>
+<p><strong>单位未指定：</strong> MuJoCo 不指定基本的物理单位。用户可以根据自己的选择来理解单位制，只要保持一致即可。</p>
+<p><strong>意外碰撞：</strong> 为了防止两条胳膊被当成碰撞导致排斥力无穷大，mujoco规定：<br>具有直接“父子关系”的两个刚体，哪怕几何体完全插在一起，也绝对不计算碰撞。<br>但是世界大地是所有物体的父物体，为了防止掉进虚空，加上：<br>如果父物体是“静态的”（Static，比如大地，或者被焊死在大地上没有关节的物体），那么“父子互不伤害”规则失效<br>的补丁。<br>躯干（Base）和大地（worldbody）之间会有一个 <code>&lt;freejoint&gt;</code>，如果删除，躯干将解除父子互不伤害规则，会立刻报错解体</p>
+<p><strong>mujoco的重要概念：</strong> 物体、几何体、标记点<br><strong>物体：</strong> 它是系统动力学计算的核心载体。它包含了这个零件的质量和惯性张量，在空间中是绝对隐形的，也不会和任何东西发生碰撞。<br><strong>几何体：</strong> 专门负责视觉渲染（外观）和碰撞检测（物理接触），在引擎底层（编译后的 <code>mjModel</code> 中），几何体本身是被剥夺了质量和惯性的，它只是一层壳。<br><strong>标记点：</strong> 有外观（能在屏幕上画出来），但既没有质量，也没有碰撞体积。专门用来在空间中精确标记一个位置。比如：你想在手指尖装一个触觉传感器、在头顶装一个 IMU（惯性导航）<br>在运动学树中，只有物体能作为节点（通过关节 Joint 与其他 Body 连接）。 几何体和标记点都被死死地“焊”在它们所属的父级物体上。当物体移动或旋转时，挂载在它身上的所有几何体和标记点都会跟着完全同步地移动。</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/现代机器人学笔记/一阶运动学与静力学" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/">一阶运动学与静力学</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/" class="archive-article-date">
+  	<time datetime="2026-05-12T11:33:01.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-12</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一阶运动学的核心"><a href="#一阶运动学的核心" class="headerlink" title="一阶运动学的核心"></a>一阶运动学的核心</h2><p>将关节速度转化为末端速度</p>
+<h2 id="空间雅可比矩阵"><a href="#空间雅可比矩阵" class="headerlink" title="空间雅可比矩阵"></a>空间雅可比矩阵</h2><p>将关节速度映射到绝对空间下的末端速度。<br><strong>空间坐标下的末端位姿有：</strong></p>
+<script type="math/tex; mode=display">
+T(\theta) = e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M
+</script>
+
+<p>我们想得到运动旋量，应该会想到</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = \dot{T} T^{-1}
+</script>
+
+<p>所以我们来求导：由于归一化只有，角度<script type="math/tex">\theta</script>是和时间相关，而螺旋轴是与时间无关的，我们求导应当遵循<script type="math/tex">\frac{d}{dt}(e^{[\mathcal{S}_i]\theta_i}) = [\mathcal{S}_i]\dot{\theta}_i e^{[\mathcal{S}_i]\theta_i}</script>的规则：</p>
+<script type="math/tex; mode=display">
+\begin{aligned} \dot{T} &= \left( [\mathcal{S}_1]\dot{\theta}_1 e^{[\mathcal{S}_1]\theta_1} \right) e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M \\ &+ e^{[\mathcal{S}_1]\theta_1} \left( [\mathcal{S}_2]\dot{\theta}_2 e^{[\mathcal{S}_2]\theta_2} \right) \dots e^{[\mathcal{S}_n]\theta_n} M \\ &+ \dots \\ &+ e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{n-1}]\theta_{n-1}} \left( [\mathcal{S}_n]\dot{\theta}_n e^{[\mathcal{S}_n]\theta_n} \right) M \end{aligned}
+</script>
+
+<p>另外，根据<script type="math/tex">(ABC)^{-1} = C^{-1}B^{-1}A^{-1}</script>的性质，<script type="math/tex">T^{-1}</script>我们能写成：</p>
+<script type="math/tex; mode=display">
+T^{-1} = M^{-1} e^{-[\mathcal{S}_n]\theta_n} \dots e^{-[\mathcal{S}_1]\theta_1}
+</script>
+
+<p>带入后发现第<script type="math/tex">i</script>项能被化简成</p>
+<script type="math/tex; mode=display">
+e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{i-1}]\theta_{i-1}} [\mathcal{S}_i] e^{-[\mathcal{S}_{i-1}]\theta_{i-1}} \dots e^{-[\mathcal{S}_1]\theta_1} \dot{\theta}_i
+</script>
+
+<p>而我们还知道伴随矩阵的公式</p>
+<script type="math/tex; mode=display">
+T [\mathcal{V}] T^{-1} = [Ad_T \mathcal{V}]
+</script>
+
+<p>所以最后的<script type="math/tex">[\mathcal{V}_s]</script>化成：</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = [\mathcal{S}_1] \dot{\theta}_1 + [Ad_{e^{[\mathcal{S}_1]\theta_1}} \mathcal{S}_2] \dot{\theta}_2 + \dots + [Ad_{e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{n-1}]\theta_{n-1}}} \mathcal{S}_n] \dot{\theta}_n
+</script>
+
+<p>提取出<script type="math/tex">\theta</script>，就有：</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_s = \underbrace{\begin{bmatrix} J_{s1} & J_{s2} & \dots & J_{sn} \end{bmatrix}}_{J_s(\theta)} \begin{bmatrix} \dot{\theta}_1 \\ \dot{\theta}_2 \\ \vdots \\ \dot{\theta}_n \end{bmatrix}
+</script>
+
+<p>其中</p>
+<script type="math/tex; mode=display">
+J_{si}(\theta) = Ad_{e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{i-1}]\theta_{i-1}}}(\mathcal{S}_i)
+</script>
+
+<p>我们把<script type="math/tex">{J_s(\theta)}</script>称为雅可比空间矩阵（6 x n），其实也就是每一个关节对末端的贡献率有多大。</p>
+<h2 id="本体雅可比矩阵"><a href="#本体雅可比矩阵" class="headerlink" title="本体雅可比矩阵"></a>本体雅可比矩阵</h2><p>有了本体PoE的基础，我们有：</p>
+<script type="math/tex; mode=display">
+T(\theta) = M e^{[\mathcal{B}_1]\theta_1} e^{[\mathcal{B}_2]\theta_2} \dots e^{[\mathcal{B}_n]\theta_n}
+</script>
+
+<p>按照一样的逻辑，我们能获得：</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_b = \underbrace{\begin{bmatrix} J_{b1} & J_{b2} & \dots & J_{bn} \end{bmatrix}}_{J_b(\theta)} \begin{bmatrix} \dot{\theta}_1 \\ \dot{\theta}_2 \\ \vdots \\ \dot{\theta}_n \end{bmatrix}
+</script>
+
+<p>其中，本体雅可比的第 <script type="math/tex">i</script> 列公式正式得出：</p>
+<script type="math/tex; mode=display">
+J_{bi}(\theta) = Ad_{e^{-[\mathcal{B}_n]\theta_n} \dots e^{-[\mathcal{B}_{i+1}]\theta_{i+1}}}(\mathcal{B}_i)
+</script>
+<h2 id="静力学的核心"><a href="#静力学的核心" class="headerlink" title="静力学的核心"></a>静力学的核心</h2><p>处理末端的力怎么分配到每一个关节的扭矩上</p>
+<h2 id="力旋量"><a href="#力旋量" class="headerlink" title="力旋量"></a>力旋量</h2><p>在运动学中，我们用运动旋量统一了旋转和平移，在力学中，我们也可以通过相同的思路统一力矩和力，参考运动旋量的格式，我们有：</p>
+<script type="math/tex; mode=display">
+\mathcal{F} = \begin{bmatrix} m \\ f \end{bmatrix} \in \mathbb{R}^6
+</script>
+
+<p>注意：这里的 <script type="math/tex">f</script> 和 <script type="math/tex">m</script> 都是相对于参考坐标系原点而言的。如果一个力作用在机械臂末端的某个非原点位置，它除了产生线形力 <script type="math/tex">f</script>，还会对坐标系原点产生一个附加的力矩 <script type="math/tex">m = r \times f</script><br>现在，我们来考虑怎么将末端的<script type="math/tex">\mathcal{F}</script> 映射到关节的扭矩上去。<br>首先，从能量守恒出发，末端做功一定会等于各个电机的功率和（这里是理想情况，不考虑重力和摩擦力，这些力可以通过补偿项计算），电机输出扭矩为<script type="math/tex">\tau</script> ，那么电机功率就等于：</p>
+<script type="math/tex; mode=display">
+P_{in} = \tau^T \dot{\theta}
+</script>
+
+<p>机器人末端做功等于</p>
+<script type="math/tex; mode=display">
+P_{out} = \mathcal{F}^T \mathcal{V}
+</script>
+
+<p>由于两者相等，我们有</p>
+<script type="math/tex; mode=display">
+\tau^T \dot{\theta} = \mathcal{F}^T \mathcal{V}
+</script>
+
+<p>前面的运动学得到</p>
+<script type="math/tex; mode=display">
+\mathcal{V} = J(\theta)\dot{\theta}
+</script>
+
+<p>的关系，我们带入原式，就有</p>
+<script type="math/tex; mode=display">
+\tau = J^T(\theta) \mathcal{F}
+</script>
+
+<p>（注意：雅可比矩阵必须和力旋量在同一参考系下）<br>可以发现，<script type="math/tex">\tau</script> 是一个（n x 1）的向量，能反映每一个关节应该出多少力。<br>现在回到力旋量上来，我们知道本体和空间的力旋量需要有一个转换的桥梁，在速度旋量中是伴随矩阵，力旋量是什么？依旧从能量守恒出发：</p>
+<script type="math/tex; mode=display">
+P = \mathcal{V}_s^T \mathcal{F}_s = \mathcal{V}_b^T \mathcal{F}_b
+</script>
+
+<p>将 <script type="math/tex">\mathcal{V}_s = [Ad_{T_{sb}}] \mathcal{V}_b</script> 代入功率等式，可以推导出力旋量的变换法则为：</p>
+<script type="math/tex; mode=display">
+\mathcal{F}_b = [Ad_{T_{sb}}]^T \mathcal{F}_s
+</script>
+
+<p>(注意，将空间力旋量转化为本体力旋量的是b-s伴随矩阵的转置)</p>
+<h2 id="雅可比矩阵的一些性质"><a href="#雅可比矩阵的一些性质" class="headerlink" title="雅可比矩阵的一些性质"></a>雅可比矩阵的一些性质</h2><p><strong>奇异位形（奇异点）：</strong> 当雅可比矩阵的秩&lt;机器人关节数之后会发生机器人无法到指定任务空间的情况。要分析这些奇异点，我们可以这样拆解：<br>首先求解各个关节角速度我们通过求解雅可比矩阵的伪逆得到：</p>
+<script type="math/tex; mode=display">
+\dot{\theta} = J^+ \mathcal{V}
+</script>
+
+<p>对雅可比矩阵 <script type="math/tex">J</script> 进行奇异值分解：</p>
+<script type="math/tex; mode=display">
+J = U \Sigma V^T
+</script>
+
+<p>其中：</p>
+<script type="math/tex">U \in \mathbb{R}^{m \times m}</script> 是正交矩阵，其列向量 <script type="math/tex">u\_i</script> 代表**任务空间**的一组正交基（速度椭球的主轴方向）。
+<script type="math/tex">V \in \mathbb{R}^{n \times n}</script> 是正交矩阵，其列向量 <script type="math/tex">v\_i</script> 代表**关节空间**的一组正交基。
+<script type="math/tex">\Sigma \in \mathbb{R}^{m \times n}</script> 是对角矩阵，对角线上的元素 <script type="math/tex">\sigma\_1 \ge \sigma\_2 \ge \dots \ge \sigma\_m \ge 0</script> 即为**奇异值**（代表在对应方向上的拉伸能力）。
+<p><strong>也就有：</strong></p>
+<script type="math/tex; mode=display">
+J^+ = V \Sigma^+ U^T
+</script>
+
+<script type="math/tex; mode=display">
+\dot{\theta} = (V \Sigma^+ U^T) \mathcal{V}
+</script>
+
+<p>对等式两边取范数（正交矩阵 <script type="math/tex">V</script> 保范数（<script type="math/tex">|Vx| = |x|</script>））：</p>
+<script type="math/tex; mode=display">
+\|\dot{\theta}\| = \|V(\Sigma^+ U^T\mathcal{V})\| = \|\Sigma^+ U^T\mathcal{V}\|
+</script>
+
+<p>我们不妨把运动旋量投影到任务空间：<script type="math/tex">\tilde{\mathcal{V}} = U^T\mathcal{V}</script>，设其分量为 <script type="math/tex">\tilde{\mathcal{V}} = [\tilde{v}_1, \tilde{v}_2, \dots, \tilde{v}_m]^T</script>两边平方后展开</p>
+<script type="math/tex; mode=display">
+\|\dot{\theta}\|^2 = \left(\frac{\tilde{v}_1}{\sigma_1}\right)^2 + \dots + \left(\frac{\tilde{v}_{m-1}}{\sigma_{m-1}}\right)^2 + \left(\frac{\tilde{v}_m}{\sigma_m}\right)^2
+</script>
+
+<p>当<script type="math/tex">\sigma_i</script>靠近0的时候，速度将会趋于无穷大，这就是奇异点。<br><strong>奇异点的数量：</strong> 任务空间有m个自由度，机器人有n个关节，奇异值就有min{m , n}个。奇异值数量等于6，称之为冗余&#x2F;标准机械臂；奇异值数量小于6，称之为欠驱动机械臂。<br>实践中，我们算当前雅可比矩阵的奇异值矩阵，利用：<script type="math/tex">\kappa = \frac{\sigma_{max}}{\sigma_{min}}</script>计算条件数，如果条件数大于100，我们应当改变当前姿态，防止奇异。</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/现代机器人学笔记/正向运动学" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/">正向运动学</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/" class="archive-article-date">
+  	<time datetime="2026-05-11T13:01:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="正向运动学主要解决什么问题"><a href="#正向运动学主要解决什么问题" class="headerlink" title="正向运动学主要解决什么问题"></a>正向运动学主要解决什么问题</h2><p><strong>作用：</strong> 输入关节角度，机械臂位移；获得末端执行器相对于原来状态的位姿<br><strong>方法：</strong> 利用PoE（指数积）或DH</p>
+<h2 id="DH表述"><a href="#DH表述" class="headerlink" title="DH表述"></a>DH表述</h2><p>从坐标系 <script type="math/tex">{i-1}</script> 到坐标系 <script type="math/tex">{i}</script>，在<script type="math/tex">{i-1}</script> 中，定义旋转轴位<script type="math/tex">Z_{i-1}</script>轴，连杆方向为<script type="math/tex">X_{i-1}</script>轴，建立右手系；<script type="math/tex">{i}</script>中，旋转方向是<script type="math/tex">Z_i</script>轴，做<script type="math/tex">Z_i</script>和<script type="math/tex">Z_{i-1}</script>公法线，远离<script type="math/tex">Z_{i-1}</script>方向为<script type="math/tex">X_{i}</script>方向。</p>
+<h2 id="定义四个物理量"><a href="#定义四个物理量" class="headerlink" title="定义四个物理量"></a>定义四个物理量</h2><p>关节角 <script type="math/tex">\theta_i</script> : 绕着 <strong><script type="math/tex">Z_{i-1}</script></strong> 旋转，使<script type="math/tex">X_{i-1}</script> 轴方向转到与新的公法线（也就是 <script type="math/tex">X_i</script> 轴）平行的位置。<br>连杆偏置 <script type="math/tex">d_i</script>: 沿着 <strong><script type="math/tex">Z_{i-1}</script></strong> 轴往上走，走到与新公法线 <script type="math/tex">X_i</script> 相交的那个点的距离。<br>连杆长度 <script type="math/tex">R_i</script>（也就是<script type="math/tex">a</script> ，但是叫R比较容易和<script type="math/tex">\alpha_i</script> 区分）: 在公法线，沿着 <strong><script type="math/tex">X_i</script></strong> 轴往前走，跨越两个 <script type="math/tex">Z</script> 轴之间的距离，真正到达下一个关节轴 <script type="math/tex">Z_i</script>。<br>连杆扭角 <script type="math/tex">\alpha_i</script>: 站在 <script type="math/tex">X_i</script> 上，绕着 <strong><script type="math/tex">X_i</script></strong> 轴旋转，使旧的 <script type="math/tex">Z_{i-1}</script> 轴的方向与新的 <script type="math/tex">Z_i</script> 轴完全对齐。<br>（<a target="_blank" rel="noopener" href="http://www.bilibili.com/video/BV1Ts411k7wV/%E8%BF%99%E4%B8%AA%E8%A7%86%E9%A2%91%E5%BE%88%E5%A5%BD%EF%BC%89">www.bilibili.com/video/BV1Ts411k7wV/这个视频很好）</a><br>现在依次对<script type="math/tex">{i-1}</script>进行操作（每一步都是右乘）：</p>
+<script type="math/tex; mode=display">
+^{i-1}T_i = Rot(Z, \theta_i) \cdot Trans(Z, d_i) \cdot Trans(X, a_i) \cdot Rot(X, \alpha_i)
+</script>
+
+<p>第一步：绕 <script type="math/tex">Z_{i-1}</script> 旋转 <script type="math/tex">\theta_i</script>：</p>
+<script type="math/tex; mode=display">
+Rot(Z, \theta_i) = \begin{bmatrix} \cos\theta_i & -\sin\theta_i & 0 & 0 \\ \sin\theta_i & \cos\theta_i & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+
+<p>第二步：沿 <script type="math/tex">Z_{i-1}</script> 平移 <script type="math/tex">d_i</script>：</p>
+<script type="math/tex; mode=display">
+Trans(Z, d_i) = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & d_i \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+
+<p>第三步：沿 <script type="math/tex">X_i</script> 平移 <script type="math/tex">a_i</script>：</p>
+<script type="math/tex; mode=display">
+Trans(X, a_i) = \begin{bmatrix} 1 & 0 & 0 & a_i \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+
+<p>第四步：绕 <script type="math/tex">X_i</script> 旋转 <script type="math/tex">\alpha_i</script>：</p>
+<script type="math/tex; mode=display">
+Rot(X, \alpha_i) = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & \cos\alpha_i & -\sin\alpha_i & 0 \\ 0 & \sin\alpha_i & \cos\alpha_i & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+
+<p>合起来就是</p>
+<script type="math/tex; mode=display">
+^{i-1}T_i = \begin{bmatrix} \cos\theta_i & -\sin\theta_i \cos\alpha_i & \sin\theta_i \sin\alpha_i & a_i \cos\theta_i \\ \sin\theta_i & \cos\theta_i \cos\alpha_i & -\cos\theta_i \sin\alpha_i & a_i \sin\theta_i \\ 0 & \sin\alpha_i & \cos\alpha_i & d_i \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+
+<p>DH确实能很好的描述关节夹角和位姿的关系，但是有几个不能忽略的问题，比如：如果两条Z平行，我们X轴是任意选的，但是实际装配没有完美的平行，随意选这种误差可能被放大；又比如由于新的坐标系原点不在物体上，运动学上往往要再加上修正矩阵处理速度之类的问题。</p>
+<h2 id="PoE方法"><a href="#PoE方法" class="headerlink" title="PoE方法"></a>PoE方法</h2><p>这个方法的基础是Chasles-Mozzi定理，简洁表述为：<br>任何刚体在三维空间中的一般位移（或瞬时运动），都可以等效为绕着空间中某一条特定直线的旋转，以及沿着该直线的平移的组合。<br>对于一个位姿的变化，我们可以写出它的单位螺旋轴：</p>
+<script type="math/tex; mode=display">
+\mathcal{S} = \begin{bmatrix} \omega \\ v \end{bmatrix}
+</script>
+
+<p>这里的 <script type="math/tex">\omega</script> 是单位量，模长为1，表示旋转轴的方向，<script type="math/tex">v = -\omega \times q + h\omega</script> , <script type="math/tex">h</script> 是关节的节距属性，<script type="math/tex">p</script> 是关节旋转轴线上任意一点，当且仅当<script type="math/tex">\omega = 0</script> 时，<script type="math/tex">|v| = 1</script> 。当这个关节旋转了 <script type="math/tex">\theta</script> 角度时，我们可以通过指数映射找到位姿矩阵</p>
+<script type="math/tex; mode=display">
+T = e^{[\mathcal{S}]\theta}
+</script>
+
+<p>这样，我们的位姿就很容易表示了：<br>令初始状态下，机器人所有的关节角 <script type="math/tex">\theta_1 = \theta_2 = \dots = \theta_n = 0</script>这就是“零位姿”，我们记录下来，写出末端执行器相对于基坐标系的 <script type="math/tex">4 \times 4</script> 齐次变换矩阵 <script type="math/tex">M</script><br>再写出每一个关节轴线的方向 <script type="math/tex">\omega_i</script> 和轴线上任意一点的坐标 <script type="math/tex">q_i</script>。计算出 6 维旋量 <script type="math/tex">\mathcal{S}_1, \mathcal{S}_2, \dots, \mathcal{S}_n</script><br>当机器人的各个关节分别转动了 <script type="math/tex">\theta_1, \theta_2, \dots, \theta_n</script> 时，末端执行器此时的位姿 <script type="math/tex">T_{sb}(\theta)</script> 就是一系列矩阵指数的连乘：</p>
+<script type="math/tex; mode=display">
+T_{sb}(\theta) = e^{[\mathcal{S}_1]\theta_1} \cdot e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} \cdot M
+</script>
+<p>对于基座固定的机器人，当然按照绝对坐标会更好，但对于一直移动的机器人，我们显然更需要本征的表示法，也就是本体形式。<br><strong>本体形式还是从零位姿开始：</strong> 先认为初始状态所有关节旋转角度为0<br>再在基坐标系 <script type="math/tex">{s}</script> 下，测量或读出此时末端执行器（夹爪）坐标系 <script type="math/tex">{b}</script> 的齐次变换矩阵 <script type="math/tex">M</script>。<br><strong>然后是最独特的一步：</strong> 逆向建轴，提取 <script type="math/tex">\mathcal{B}_i</script>，也就是获取在本体视角下，其他关节的螺旋轴位置：</p>
+<script type="math/tex; mode=display">
+\mathcal{B}_i = \begin{bmatrix} \omega_b \\ -\omega_b \times q_b \end{bmatrix}
+</script>
+
+<p>当然可以用伴随矩阵转化</p>
+<script type="math/tex; mode=display">
+\mathcal{B}_i = [\text{Ad}_{M^{-1}}] \mathcal{S}_i
+</script>
+<p><strong>最后就是组装：</strong></p>
+<script type="math/tex; mode=display">
+T_{sb}(\theta) = M \cdot e^{[\mathcal{B}_1]\theta_1} e^{[\mathcal{B}_2]\theta_2} \dots e^{[\mathcal{B}_n]\theta_n}
+</script>
+
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-笔记/现代机器人学笔记/刚体运动小结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">刚体运动小结</a>
+    </h1>
+  
+
+        
+        <a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
+  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚体运动的主线是怎么表示一个刚体的姿态和位置，怎么表达刚体的运动状态。<br>对于空间位置，这个是容易的，我们定下参考系，三维空间中通过三个坐标就能确定一个刚体的空间位置。但对于姿态，复杂度更高一些，我们注意到，姿态问题也可以朴素的理解成指向的问题，我们把这个新的指向建立直角坐标系，得到的坐标系成为B，那么B的朝向就是B的xyz轴在A坐标下的投影。于是，我们通过建立A和B坐标系的关系，刻画了A坐标系下物体的姿态。也就是坐标系 <script type="math/tex">B</script> 的三个轴（单位向量 <script type="math/tex">\vec{x}_B, \vec{y}_B, \vec{z}_B</script>）在参考系 <script type="math/tex">A</script> 下的投影坐标。<br>我们将这三个投影出来的列向量横向排开，就得到了旋转矩阵 <script type="math/tex">R_{AB}</script>**：</p>
+<script type="math/tex; mode=display">
+R_{AB} = \begin{bmatrix} | & | & | \\ {}^A\vec{x}_B & {}^A\vec{y}_B & {}^A\vec{z}_B \\ | & | & | \end{bmatrix}
+</script>
+
+<p>怎么表示不同坐标系的转换呢，如果我们知道一个点在A坐标系下的位置，想通过B坐标系得到这个点在C坐标系下的位置，我们当然可以这样写：</p>
+<script type="math/tex">p\_B = R\_{BA} p\_A + t\_{BA}</script>
+<script type="math/tex">p\_C = R\_{CB} p\_B + t\_{CB}</script>
+<p>但是这样会有一个问题</p>
+<script type="math/tex">p\_C = R\_{CB} R\_{BA} p\_A + R\_{CB} t\_{BA} + t\_{CB}</script>
+<p>越往后面，这种计算的复杂度会越来越大。于是，我们导入位姿矩阵T（满足李群）,与齐次坐标</p>
+<script type="math/tex; mode=display">
+P_{homogeneous} = \begin{bmatrix} x \\ y \\ z \\ 1 \end{bmatrix}
+</script>
+<script type="math/tex; mode=display">
+T = \begin{bmatrix} R & p \\ 0 & 1 \end{bmatrix}
+</script>
+<p>其中p是在B坐标系下A坐标系原点的位置，大小等同于<script type="math/tex">t_{BA}</script><br>这样，</p>
+<script type="math/tex">b = T\_1 a</script>
+<script type="math/tex">c = T\_2 b</script>
+<script type="math/tex">c = T\_2 T\_1 a</script>
+<p>极大的方便了坐标系的转换。</p>
+<p>现在，我们需要考虑怎么处理转动和平动这两个问题了。<br>直觉的思路是直接把T对时间求导，也就是</p>
+<script type="math/tex; mode=display">
+\dot{T} = \frac{d}{dt} \begin{bmatrix} R_{SB} & p_{SB} \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} \dot{R}_{SB} & \dot{p}_{SB} \\ 0 & 0 \end{bmatrix}
+</script>
+<p>很明显<script type="math/tex">\dot{p}_{SB}</script>就是刚体在绝对坐标中的平移速度，但是<script type="math/tex">\dot{R}_{SB}</script> 我们看不出有什么意义。我们在这里利用R的正交性进行一些数学上的操作：<br>把</p>
+<script type="math/tex; mode=display">
+R_{SB} R_{SB}^T = I
+</script>
+<p>两边对时间求导，得到</p>
+<script type="math/tex; mode=display">
+\dot{R}_{SB} R_{SB}^T + R_{SB} \dot{R}_{SB}^T = 0
+</script>
+<p>交换一下得到（传送锚点1）</p>
+<script type="math/tex; mode=display">
+\dot{R}_{SB} R_{SB}^T = -(\dot{R}_{SB} R_{SB}^T)^T
+</script>
+<p>也就是<script type="math/tex">\dot{R}_{SB} R_{SB}^T</script> 是一个反对称矩阵，这个矩阵有什么用呢？我们现在找一个绝对坐标系S和一个本体坐标系B，B中刚体上有一个固定点P绕B原点旋转，通过旋转矩阵，我们能这样描述这个点在绝对坐标系中的坐标：</p>
+<script type="math/tex; mode=display">
+p_S(t) = R_{SB}(t) p_B + t_{SB}
+</script>
+<p>由于对于坐标系B来说，点P的坐标是固定的，因此<script type="math/tex">p_b</script>应当是一个常数。对时间求导，我们能知道他的真实速度</p>
+<script type="math/tex; mode=display">
+v_S(t) = \dot{p}_S(t) = \dot{R}_{SB}(t) p_B + \dot{t}_{SB}
+</script>
+<p>利用</p>
+<script type="math/tex; mode=display">
+p_S - t_{SB} = R_{SB} p_B
+</script>
+
+<script type="math/tex; mode=display">
+p_B = R_{SB}^T (p_S - t_{SB})
+</script>
+<p>替换<script type="math/tex">p_b</script>，于是</p>
+<script type="math/tex; mode=display">
+v_S = (\dot{R}_{SB} R_{SB}^T) (p_S - t_{SB}) + \dot{t}_{SB}
+</script>
+<p>对比发现<script type="math/tex">\dot{R}_{SB} R_{SB}^T = -(\dot{R}_{SB} R_{SB}^T)^T = \hat{\omega}</script>就是<script type="math/tex">\omega</script> 的反对称矩阵<script type="math/tex">\hat{\omega}</script> 。<br>回到传送锚点1，我们知道<script type="math/tex">-(\dot{R}_{SB} R_{SB}^T)^T</script>有<script type="math/tex">\hat{\omega}</script>的含义，那下一步目的就很明确了，把<script type="math/tex">\dot{R}_{SB}</script>的信息解放出来！<br>既然看到目标值成分中有转置，我们先构造个<script type="math/tex">R^T</script> 出来：</p>
+<script type="math/tex; mode=display">
+T^{-1} = \begin{bmatrix} R_{SB}^T & -R_{SB}^T p_{SB} \\ 0 & 1 \end{bmatrix}
+</script>
+<p><strong>再把原始项抓过来比较一下：</strong></p>
+<script type="math/tex; mode=display">
+\dot{T} = \frac{d}{dt} \begin{bmatrix} R_{SB} & p_{SB} \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} \dot{R}_{SB} & \dot{p}_{SB} \\ 0 & 0 \end{bmatrix}
+</script>
+<p>不难发现，直接相乘就有了！于是</p>
+<script type="math/tex; mode=display">
+\dot{T} T^{-1} = \begin{bmatrix} \dot{R}_{SB} R_{SB}^T & -\dot{R}_{SB} R_{SB}^T p_{SB} + \dot{p}_{SB} \\ 0 & 0 \end{bmatrix} = \begin{bmatrix} [\omega_{SB}] & \mathbf{\dot{p}_{SB} - \omega_{SB} \times p_{SB}} \\ 0 & 0 \end{bmatrix}
+</script>
+<script type="math/tex">{\dot{p}\_{SB} - \omega\_{SB} \times p\_{SB}}</script>看起来可能还是有点朦胧，但是我们使用欧拉速度公式的话，这个就是线速度吗。通过欧拉速度公式
+
+<script type="math/tex; mode=display">
+v_A = v_B + \omega \times \vec{r}_{BA}
+</script>
+<p>这不就是上面式子的格式嘛，我们就得到</p>
+<script type="math/tex; mode=display">
+v_s = \dot{p}_{SB} - \omega_{SB} \times p_{SB}
+</script>
+<p>其中<script type="math/tex">\dot{p}_{SB}</script>：<script type="math/tex">{B}</script> 系原点在 <script type="math/tex">{S}</script> 系中的真实平移速度；<script type="math/tex">\omega_{SB}</script>：刚体相对于 <script type="math/tex">{S}</script> 系的角速度；<script type="math/tex">p_{SB}</script>：从 <script type="math/tex">{S}</script> 系原点指向 <script type="math/tex">{B}</script> 系原点的向量；<script type="math/tex">v_s</script>：<br>我们把调整之后的矩阵称为旋量矩阵（它也是李代数），</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = \dot{T} T^{-1} = \begin{bmatrix} [\omega_s] & v_s \\ 0 & 0 \end{bmatrix}
+</script>
+
+<p>现在，我们有了速度，但这个速度是站在绝对坐标的角度去观察问题的，那如果我们想在B坐标系观察C坐标系的速度怎么办，我们需要速度层面的“转换算子”。</p>
+<p>实际上，刚才为了保证叙事的流畅性，有一个线索被刻意淡视了：为什么构建的时候要用<script type="math/tex">\hat{\omega_s}</script>呢？，<script type="math/tex">\hat{\omega_b}</script>呢？<br>实际上，通过旋转矩阵，我们可以很轻松的获得B坐标系下旋转轴的方向：</p>
+<script type="math/tex; mode=display">
+\omega_b = R_{SB}^T \omega_s
+</script>
+<p>我们把<script type="math/tex">R_{SB}^T</script>给原来的式子乘上：</p>
+<script type="math/tex; mode=display">
+[\omega_b] = R_{SB}^T (\dot{R}_{SB} R_{SB}^T) R_{SB} = \mathbf{R_{SB}^T \dot{R}_{SB}}
+</script>
+<p>似曾相识啊，<script type="math/tex">T^{-1} \dot{T}</script>  肯定能提取出这种结构（这个位置交换应该显而易见吧（）），<br>所以</p>
+<script type="math/tex; mode=display">
+T^{-1} \dot{T} = \begin{bmatrix} R_{SB}^T & -R_{SB}^T p_{SB} \\ 0 & 1 \end{bmatrix} \begin{bmatrix} \dot{R}_{SB} & \dot{p}_{SB} \\ 0 & 0 \end{bmatrix} = \begin{bmatrix} R_{SB}^T \dot{R}_{SB} & R_{SB}^T \dot{p}_{SB} \\ 0 & 0 \end{bmatrix}
+</script>
+<p>也就是</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_b] = T_{SB}^{-1} \dot{T}_{SB} = \begin{bmatrix} [\omega_b] & v_b \\ 0 & 0 \end{bmatrix}
+</script>
+<p>现在在来推导不同坐标系速度的转换就简单多了，现在已知条件是：<br> <script type="math/tex">{B}</script> 系里的旋量是 <script type="math/tex">\mathcal{V}_B = \begin{bmatrix} \omega_B \ v_B \end{bmatrix}</script>。 <script type="math/tex">{A}</script> 系里的旋量 <script type="math/tex">\mathcal{V}_A = \begin{bmatrix} \omega_A \ v_A \end{bmatrix}</script>。<script type="math/tex">{B}</script> 系相对于 <script type="math/tex">{A}</script> 系的位姿是 <script type="math/tex">T_{AB} = \begin{bmatrix} R_{AB} &amp; p_{AB} \ 0 &amp; 1 \end{bmatrix}</script><br><strong>我们有一个很简单的思路：</strong> 通过绝对坐标系中转。</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = T_{SB} [\mathcal{V}_b] T_{SB}^{-1}
+</script>
+<script type="math/tex; mode=display">
+[\mathcal{V}_a] = T_{SA}^{-1}[\mathcal{V}_s] T_{SA}
+</script>
+<p>也就是</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_a] = T_{SA}^{-1} \Big( T_{SB} [\mathcal{V}_b] T_{SB}^{-1} \Big) T_{SA}
+</script>
+<p>又因为 <script type="math/tex">T_{SA}^{-1} T_{SB} = T_{AB}</script>；<script type="math/tex">T_{SB}^{-1} T_{SA} = (T_{SA}^{-1} T_{SB})^{-1} = T_{SB}^{-1} T_{SA} = T_{AB}^{-1}</script> 就有：</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_a] = T_{AB} [\mathcal{V}_b] T_{AB}^{-1}
+</script>
+<p>计算之后，得到<script type="math/tex">[\omega_a] = R[\omega_b] R^T</script>；<script type="math/tex">v_a = -R[\omega_b] R^T p + R v_b</script>的关系。我们发现，这里有一个共同的因子<script type="math/tex">R[\omega_b] R^T</script>，我们能不能把他换一种方式表达呢？还真有，这里插入一条等式：</p>
+<script type="math/tex; mode=display">
+R[\omega]R^T = [R\omega]
+</script>
+
+<p>证明如下：<br>首先有以下两条性质</p>
+<script type="math/tex; mode=display">
+[a]b = a \times b
+</script>
+
+<script type="math/tex; mode=display">
+R(a \times b) = (Ra) \times (Rb)
+</script>
+
+<p>对原式交换一下运算顺序</p>
+<script type="math/tex; mode=display">
+(R[\omega]R^T)x = R \Big( [\omega] (R^T x) \Big) = R \Big( \omega \times (R^T x) \Big)
+</script>
+
+<p>按照上面性质运算</p>
+<script type="math/tex; mode=display">
+R \Big( \omega \times (R^T x) \Big) = (R\omega) \times \Big( R(R^T x) \Big)
+</script>
+<p>显而易见，上式可以化为</p>
+<script type="math/tex; mode=display">
+(R\omega) \times x
+</script>
+<p>得证。<br>有了这个等式，表达就方便得多了：</p>
+<script type="math/tex; mode=display">
+\omega_a = R \omega_b + 0 \cdot v_b
+</script>
+<script type="math/tex; mode=display">
+v_a = [p]R \omega_b + R v_b
+</script>
+
+<p>也可以这样表述：</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix} \omega_a \\ v_a \end{bmatrix} = \begin{bmatrix} R & 0 \\ [p]R & R \end{bmatrix} \begin{bmatrix} \omega_b \\ v_b \end{bmatrix}
+</script>
+<p>这就是不同参考系下运动旋量的转换，记</p>
+<script type="math/tex; mode=display">
+Ad_{T_{AB}} = \begin{bmatrix} R_{AB} & 0 \\ [p_{AB}]R_{AB} & R_{AB} \end{bmatrix}
+</script>
+
+<p>称之为Adjoint矩阵 ，也就是伴随变换矩阵。</p>
+<p>现在刚体运动中还有最后一项没有解决，运动和位姿怎么相互转化，毕竟这是我们最关心的问题之一。还记得上面提到位姿矩阵属于李群，而旋量矩阵属于李代数吗，关于这方面的理论本文将不会介绍，但至少要知道：李群是一个连续光滑群，运算只包含了乘法而不包含加法，但控制中，例如PID，经常性的会利用目标状态与当前状态的差值进行控制，因此我们需要一种方法来运算加减；于是通过映射，我们将弯曲的李群流型映射到平直的李代数平面进行加减的运算，而实现这个过程的数学工具就是对数映射和指数映射。</p>
+<p>对数映射，是用来把运动旋量的作用反映到位姿矩阵上的工具。我们还是按照先处理旋转再处理平移的思路来分析问题。对于<script type="math/tex">\omega</script>，我们当然会想到乘以时间<script type="math/tex">\theta</script> ，再将旋转角度体现到旋转矩阵上。现在来看这个公式：</p>
+<script type="math/tex; mode=display">
+p_s(t) = R(t) p_b
+</script>
+
+<p>这个公式我们很熟悉了，把本征坐标转化为绝对坐标，现在我们求导，由于本征坐标是个常量，求导应该是</p>
+<script type="math/tex; mode=display">
+\dot{p}_s(t) = \dot{R}(t) p_b
+</script>
+
+<p>现在我们给绝对线速度换一种表示方式：<script type="math/tex">\dot{p} = \omega \times p</script> 也就是</p>
+<script type="math/tex; mode=display">
+\dot{p}_s(t) = [\omega_s] p_s(t)
+</script>
+
+<p>对比发现：</p>
+<script type="math/tex; mode=display">
+\dot{R}(t) = [\omega_s] R(t)
+</script>
+
+<p>这不是经典的常微分情况吗，解应当是指数形式，即</p>
+<script type="math/tex; mode=display">
+R(t) = e^{[\omega_s] t} R(0) = e^{[\omega_s] t}
+</script>
+
+<p>这个方程还有一种简化运算的方法，即罗德里格斯公式展开后的结果。我们先约定<script type="math/tex">\omega_s = |\omega_s| \cdot u</script>， <script type="math/tex">\theta = |\omega_s| t</script>，所以，</p>
+<script type="math/tex; mode=display">
+R(\theta) = e^{[u]\theta}
+</script>
+<p><strong>先把指数用泰勒展开：</strong></p>
+<script type="math/tex; mode=display">
+e^{[u]\theta} = I + [u]\theta + \frac{([u]\theta)^2}{2!} + \frac{([u]\theta)^3}{3!} + \dots
+</script>
+
+<p>我们发现</p>
+<script type="math/tex; mode=display">
+[u]^3 = -[u]
+</script>
+
+<script type="math/tex; mode=display">
+[u]^4 = -[u]^2
+</script>
+<p><strong>也就能这样简化：</strong> 奇数项变成：<script type="math/tex">\big( \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \dots \big) [u]</script>；<br><strong>偶数项变成：</strong> <script type="math/tex">\big( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \dots \big) [u]^2</script><br>系数里不就是sin和1-cos吗？于是有</p>
+<script type="math/tex; mode=display">
+R(\theta) = e^{[u]\theta} = I + \sin\theta [u] + (1 - \cos\theta) [u]^2
+</script>
+
+<p>旋转和角速度终于被解决了！我们回到最开始的初心使命：把运动旋量映射到位姿矩阵上，<br>我们知道</p>
+<script type="math/tex; mode=display">
+\tilde{p}_{new} = T \cdot \tilde{p}_{old}
+</script>
+
+<script type="math/tex; mode=display">
+[\mathcal{V}] = T_{}^{-1} \dot{T}_{}
+</script>
+<p><strong>这里需要特别注意</strong>：我们此时要处理的是从<strong>恒定速度旋量</strong> V 出发，经过 <strong>时间 t</strong> 生成位姿矩阵<script type="math/tex">T(t) = e^{\mathcal{V}t}</script>。<strong>设 <script type="math/tex">\mathcal{V} = \begin{bmatrix} [\omega] &amp; v \ 0 &amp; 0 \end{bmatrix}</script>，其中 ω 是角速度向量（有大小），v 是线速度向量</strong>。经过时间 t，转动角度<script type="math/tex">\theta = |\omega|t</script>，单位转轴 <script type="math/tex">u = \omega/|\omega|</script>。<br>有了前面旋转矩阵的探索，我们就得到：</p>
+<script type="math/tex; mode=display">
+T(\theta) = e^{[\mathcal{V}]\theta} = \begin{bmatrix} R(\theta) & p(\theta) \\ 0 & 1 \end{bmatrix}
+</script>
+
+<p>分块矩阵的左上角已经解决了，我们着重解决右上角，观察：</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}]^2 = \begin{bmatrix} [\omega] & v \\ 0 & 0 \end{bmatrix} \begin{bmatrix} [\omega] & v \\ 0 & 0 \end{bmatrix} = \begin{bmatrix} [\omega]^2 & [\omega]v \\ 0 & 0 \end{bmatrix}
+</script>
+
+<script type="math/tex; mode=display">
+[\mathcal{V}]^3 = \begin{bmatrix} [\omega] & v \\ 0 & 0 \end{bmatrix} \begin{bmatrix} [\omega]^2 & [\omega]v \\ 0 & 0 \end{bmatrix} = \begin{bmatrix} [\omega]^3 & [\omega]^2 v \\ 0 & 0 \end{bmatrix}
+</script>
+
+<p>发现平移速度一直在被角速度叉乘。我们展开</p>
+<script type="math/tex; mode=display">
+e^{[\mathcal{V}]\theta} = I_{4 \times 4} + [\mathcal{V}]\theta + \frac{\theta^2}{2!} [\mathcal{V}]^2 + \frac{\theta^3}{3!} [\mathcal{V}]^3 + \dots
+</script>
+
+<p>重点关注右上角：</p>
+<script type="math/tex; mode=display">
+p = \left( I\theta + \frac{\theta^2}{2!} [\omega] + \frac{\theta^3}{3!} [\omega]^2 + \frac{\theta^4}{4!} [\omega]^3 + \frac{\theta^5}{5!} [\omega]^4 + \dots \right) v
+</script>
+
+<p>利用之前角速度的关系：</p>
+<script type="math/tex; mode=display">
+p = \left[ I\theta + \left( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \dots \right) [\omega] + \left( \frac{\theta^3}{3!} - \frac{\theta^5}{5!} + \dots \right) [\omega]^2 \right] v
+</script>
+
+<p>这不还是sin、cos吗？也就是：</p>
+<script type="math/tex; mode=display">
+p = \big( I\theta + (1 - \cos\theta) [\omega] + (\theta - \sin\theta) [\omega]^2 \big) v
+</script>
+
+<p>合并就有</p>
+<script type="math/tex; mode=display">
+e^{[\mathcal{V}]\theta} = \begin{bmatrix} e^{[\omega]\theta} & \big( I\theta + (1 - \cos\theta) [\omega] + (\theta - \sin\theta) [\omega]^2 \big) v \\ 0 & 1 \end{bmatrix}
+</script>
+<p>可喜可贺<del>可喜可贺</del></p>
+<p>现在来关注怎么从位姿矩阵推导出运动旋量，有人问：既然有位姿矩阵推导运动旋量的方法，为什么还要推导一次？实际上，这两个推导方式是处理不同问题的，</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = \dot{T} T^{-1} = \begin{bmatrix} [\omega_s] & v_s \\ 0 & 0 \end{bmatrix}
+</script>
+
+<p>由于有导数的存在，实际上只能处理运动的单个物体。那从位姿A到位姿B我们怎么处理，这就是对数映射的作用，我们约定</p>
+<script type="math/tex; mode=display">
+T = T_{rel} = T_{start}^{-1} \cdot T_{end}
+</script>
+
+<p>也就是以后推导中T实际上就是两个位姿的转换矩阵。我们还是先来处理角速度的问题。<br>首先，关注转了多少度的问题，我们利用方阵迹的只和旋转角度有关的属性就能获得<script type="math/tex">\theta</script> 的信息</p>
+<script type="math/tex; mode=display">
+\text{tr}(R) = R_{11} + R_{22} + R_{33} = 1 + 2\cos\theta
+</script>
+
+<p>我们通过反三角函数就能获得<script type="math/tex">\theta</script> 的大小：</p>
+<script type="math/tex; mode=display">
+\theta = \arccos\left(\frac{R_{11} + R_{22} + R_{33} - 1}{2}\right)
+</script>
+
+<p>现在的问题就是怎么获得转轴信息，一个旋转矩阵利用罗德里格斯展开就是</p>
+<script type="math/tex; mode=display">
+R = I + \sin\theta [\omega] + (1-\cos\theta)[\omega]^2
+</script>
+
+<p>我们观察到，I是对称的；<script type="math/tex">[\omega]^2</script>也是对称的，只有sin项能反应出正负区别，也就是包含旋转轴信息。我们可以利用反对称的性质获得这一项：</p>
+<script type="math/tex; mode=display">
+R - R^T = \begin{bmatrix} 0 & R_{12}-R_{21} & R_{13}-R_{31} \\ R_{21}-R_{12} & 0 & R_{23}-R_{32} \\ R_{31}-R_{13} & R_{32}-R_{23} & 0 \end{bmatrix}=2sin{\theta}[\omega] = 2\sin\theta \begin{bmatrix} 0 & -\omega_z & \omega_y \\ \omega_z & 0 & -\omega_x \\ -\omega_y & \omega_x & 0 \end{bmatrix}
+</script>
+
+<p>对齐每一项：</p>
+<script type="math/tex; mode=display">
+\omega = \frac{1}{2\sin\theta} \begin{bmatrix} R_{32} - R_{23} \\ R_{13} - R_{31} \\ R_{21} - R_{12} \end{bmatrix}
+</script>
+
+<p>再结合之前的<script type="math/tex">\theta</script> 我们就得到了旋转的信息了。现在我们在关注速度信息。<br>我们都知道，速度信息其实同时包含线速度和平移速度，也就是摆线的速度，由于：</p>
+<script type="math/tex; mode=display">
+p_s(T) = \int_{0}^{T} \dot{p}_s(t) \, dt = \int_{0}^{T} R_{sb}(t) v_b \, dt
+</script>
+
+<p>因为<script type="math/tex">v_b</script>是一个常量，把他提出来，</p>
+<script type="math/tex; mode=display">
+p_s(T) = \left( \int_{0}^{T} R_{sb}(t) \, dt \right) v_b
+</script>
+
+<p>令</p>
+<script type="math/tex; mode=display">
+\left( \int_{0}^{T} R_{sb}(t) \, dt \right) = J(t)
+</script>
+
+<p>我们把这个矩阵称为雅可比矩阵，现在我们展开化简一下</p>
+<script type="math/tex; mode=display">
+R_{sb}(t) = I + \frac{\sin(\|\omega_b\| t)}{\|\omega_b\|} [\omega_b] + \frac{1 - \cos(\|\omega_b\| t)}{\|\omega_b\|^2} [\omega_b]^2
+</script>
+
+<p>为了简洁考虑，令<script type="math/tex">u = \frac{\omega_b}{|\omega_b|}</script>，就有</p>
+<script type="math/tex; mode=display">
+R_{sb}(t) = I + \sin(\|\omega_b\| t) [u] + (1 - \cos(\|\omega_b\| t)) [u]^2
+</script>
+
+<p>带入原式</p>
+<script type="math/tex; mode=display">
+J_{time}(T) = \int_{0}^{T} \left( I + \sin(\|\omega_b\| t) [u] + (1 - \cos(\|\omega_b\| t)) [u]^2 \right) dt
+</script>
+
+<p>常数项积分结果：</p>
+<script type="math/tex; mode=display">
+\int_{0}^{T} I \, dt = I \cdot T
+</script>
+
+<p>sin项：</p>
+<script type="math/tex; mode=display">
+\int_{0}^{T} \sin(\|\omega_b\| t) [u] \, dt = \left[ -\frac{\cos(\|\omega_b\| t)}{\|\omega_b\|} \right]_0^T [u] = \frac{1 - \cos(\|\omega_b\| T)}{\|\omega_b\|} [u]
+</script>
+
+<p>cos项：</p>
+<script type="math/tex; mode=display">
+\int_{0}^{T} (1 - \cos(\|\omega_b\| t)) [u]^2 \, dt = \left[ t - \frac{\sin(\|\omega_b\| t)}{\|\omega_b\|} \right]_0^T [u]^2 = \left( T - \frac{\sin(\|\omega_b\| T)}{\|\omega_b\|} \right) [u]^2
+</script>
+
+<p>雅可比矩阵就表示为：</p>
+<script type="math/tex; mode=display">
+J_{time}(T) = I \cdot T + \frac{1 - \cos(\|\omega_b\| T)}{\|\omega_b\|} [u] + \frac{\|\omega_b\| T - \sin(\|\omega_b\| T)}{\|\omega_b\|} [u]^2
+</script>
+
+<p>我们看cos项里的数值，<script type="math/tex">|\omega_b| T</script> 不就是转过的角度<script type="math/tex">\theta</script> 吗，我们简化为</p>
+<script type="math/tex; mode=display">
+J_{time}(T) = T  \left( I + \frac{1 - \cos\theta}{\theta} [u] + \frac{\theta - \sin\theta}{\theta} [u]^2 \right)
+</script>
+
+<p>我们回到速度和位姿的转化，我们有</p>
+<script type="math/tex; mode=display">
+p = J_{time}(T) \cdot v_b
+</script>
+
+<p>观察之前雅可比的形状，我们把标准雅可比和T分开，就有</p>
+<script type="math/tex; mode=display">
+p = \big( T \cdot J_{geom}(\theta) \big) \cdot v_b = J_{geom}(\theta) \cdot (v_b T)
+</script>
+
+<p>也就是</p>
+<script type="math/tex; mode=display">
+v_b = \frac{1}{T} J_{geom}^{-1}(\theta) \cdot p
+</script>
+
+<p>我们需要做的就是对雅可比矩阵求逆（直接求逆会丢精度，这里是待定系数得到的，推导可以自行搜索）：</p>
+<script type="math/tex; mode=display">
+J_{geom}^{-1}(\theta) = I - \frac{\theta}{2} [u] + \left( 1 - \frac{\theta}{2} \cot\left(\frac{\theta}{2}\right) \right) [u]^2
+</script>
+
+<p>现在我们既有<script type="math/tex">\omega</script> 也有<script type="math/tex">v</script>，我们只需要组装一下，就能得到运动旋量<script type="math/tex">[\mathcal{V}]</script> ，哦咩跌多~~</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+  
+    <nav id="page-nav">
+      <span class="page-number current">1</span><a class="page-number" href="/posts/page/2/">2</a><a class="extend next" rel="next" href="/posts/page/2/">Next &raquo;</a>
+    </nav>
+  
+
 
           </div>
         </div>
@@ -265,7 +1962,7 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
+                <a href="javascript:void(0)" class="js-tag color4">mujoco自用</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -273,7 +1970,7 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">现代机器人学笔记</a>
+                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -281,7 +1978,7 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">mujoco自用</a>
+                <a href="javascript:void(0)" class="js-tag color4">现代机器人学笔记</a>
               </li>
             
             <div class="clearfix"></div>
