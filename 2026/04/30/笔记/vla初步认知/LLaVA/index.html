@@ -6,21 +6,23 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
-  <title>Archives | 西川の小屋</title>
+  <title>LLaVA | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="xichuanly 的个人博客">
-<meta property="og:type" content="website">
-<meta property="og:title" content="西川の小屋">
-<meta property="og:url" content="https://xichuanly.github.io/archives/index.html">
+  <meta name="description" content="LLaVA核心思路：	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLaVA">
+<meta property="og:url" content="https://xichuanly.github.io/2026/04/30/%E7%AC%94%E8%AE%B0/vla%E5%88%9D%E6%AD%A5%E8%AE%A4%E7%9F%A5/LLaVA/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="xichuanly 的个人博客">
+<meta property="og:description" content="LLaVA核心思路：	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://xichuanly.github.io/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
+<meta property="article:published_time" content="2026-04-29T16:49:29.000Z">
+<meta property="article:modified_time" content="2026-05-15T07:11:58.769Z">
 <meta property="article:author" content="xichuanly">
-<meta property="article:tag" content="blog">
-<meta property="article:tag" content="math">
-<meta property="article:tag" content="notes">
-<meta property="article:tag" content="robotics">
+<meta property="article:tag" content="vla初步认知">
+<meta property="article:tag" content="笔记">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://xichuanly.github.io/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
   
   
     <link rel="icon" href="/favicon.png">
@@ -146,36 +148,35 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-笔记/vla初步认知/LLaVA" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      LLaVA
+    </h1>
+  
+
+        
+        <a href="/2026/04/30/%E7%AC%94%E8%AE%B0/vla%E5%88%9D%E6%AD%A5%E8%AE%A4%E7%9F%A5/LLaVA/" class="archive-article-date">
+  	<time datetime="2026-04-29T16:49:29.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-04-30</time>
+</a>
+        
+      </header>
     
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>LLaVA核心思路：<br>	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text token拼接之后直接作为llm的输入（类似把image token作为一种“外语”去学习），所得到的是文字token.<br>	训练过程分成两步：<br>	1.特征对齐：目的是保证视觉编码器的信息被充分翻译到词向量空间中<br>	此时，完全冻结LLM参数和ViT参数，使用大量的文本对来训练Projection层的参数。<br>	2.端到端视觉微调：目的是让模型在看懂图片的基础上去执行人类的指令<br>	此时，仍然冻结ViT参数，但是解锁LLM参数和投影层参数，数据是问答形式，例如如果把石头推下去会怎么样。通过这种数据对来提升模型的推理能力。<br><img src="/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="LLaVA流程图"><br>Cross-Modal Fusion：<br>	LLaVA采用的多模态融合采用直接拼接的方式。假设用户输入是<br>	USER: $<image>$\n这是什么？ASSISTANT:（$<image>$、USER:、ASSISTANT:是预设的占位符），之后让让image token按照固定的顺序替换<image>就可以输入进模型了<br>CLIP与LLaVA的能力差异：<br>	CLIP输入：训练：图文对；推理：零样本分类（（比如 <code>[&quot;一只猫&quot;, &quot;一只狗&quot;, &quot;一辆车&quot;]</code>）。<br>	输出：图文的匹配程度（余弦相似度矩阵（分数））。<br>	能力：分辨图片里的东西是什么比如是猫还是狗，但是不能理解图片里有什么，只能分辨和描述文本有多匹配。<br>	LLaVA输入：训练：阶段一：图片 + 极其简单的描述文本；阶段二：图片 + 复杂的用户指令（Prompt） + 标准的期望回答。<br>	输出：纯粹的文本token序列。<br>	能力：通过图文交互的自注意力机制，通过学习能理解图片中的东西是什么，能进一步推理图片的内容，泛化能力强。</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
       
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2026" class="archive-year">2026</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/" class="archive-article-date">
-  	<time datetime="2026-05-15T07:02:19.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/">Decoder</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -185,13 +186,13 @@
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">vla初步认知</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
+      
 	<div class="article-category tagcloud">
 		<i class="icon-book icon"></i>
 		<ul class="article-tag-list">
@@ -201,540 +202,81 @@
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
+        			<a href="/categories/笔记/vla初步认知//" class="article-tag-list-link color3">vla初步认知</a>
         		</li>
       		
 		</ul>
 	</div>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/" class="archive-article-date">
-  	<time datetime="2026-05-15T07:00:52.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
+<nav id="article-nav">
+  
+    <a href="/2026/05/06/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%BD%8D%E5%BD%A2%E7%A9%BA%E9%97%B4/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          位形空间
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2026/04/30/%E7%AC%94%E8%AE%B0/vla%E5%88%9D%E6%AD%A5%E8%AE%A4%E7%9F%A5/CLIP/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">CLIP</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/">Encoder</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
+        
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    目录，不存在的…
+                    </div>
+                </span>
+            </div>
         </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/" class="archive-article-date">
-  	<time datetime="2026-05-15T07:00:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/">Position-encoder</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
+        
+    </div>
+</aside>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:59:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/">Multi-attention</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:59:03.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/">Attention</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:49:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/">建模方法</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/" class="archive-article-date">
-  	<time datetime="2026-05-12T16:57:25.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-13</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/">总览</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/" class="archive-article-date">
-  	<time datetime="2026-05-12T11:33:01.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-12</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/">一阶运动学与静力学</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/" class="archive-article-date">
-  	<time datetime="2026-05-11T13:01:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/">正向运动学</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
-  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">刚体运动小结</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
   
   
-    </div></section>
   
 
-    
-    <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/archives/page/2/">2</a><a class="extend next" rel="next" href="/archives/page/2/">Next &raquo;</a>
-    </nav>
+  
+
+  
+
   
 
 
@@ -758,8 +300,8 @@
 	var yiliaConfig = {
 		mathjax: true,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,

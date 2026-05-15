@@ -6,20 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
-  <title>Archives | 西川の小屋</title>
+  <title>Decoder | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="xichuanly 的个人博客">
-<meta property="og:type" content="website">
-<meta property="og:title" content="西川の小屋">
-<meta property="og:url" content="https://xichuanly.github.io/archives/index.html">
+  <meta name="description" content="decoder和encoder区别：	encoder负责非线性的提取信息细节，decoder则有两个输入，一部分是encoder提取的原文信息；一方面是decoder以前生成的上文信息。decoder的输出是一个一个的。	decoder的block也不同于encoder，他由3个主要结构组成，中间填充Add&amp;Norm。	三个核心是Masked Multi-Head Attention，Cr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Decoder">
+<meta property="og:url" content="https://xichuanly.github.io/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="xichuanly 的个人博客">
+<meta property="og:description" content="decoder和encoder区别：	encoder负责非线性的提取信息细节，decoder则有两个输入，一部分是encoder提取的原文信息；一方面是decoder以前生成的上文信息。decoder的输出是一个一个的。	decoder的block也不同于encoder，他由3个主要结构组成，中间填充Add&amp;Norm。	三个核心是Masked Multi-Head Attention，Cr">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-15T07:02:19.000Z">
+<meta property="article:modified_time" content="2026-05-15T07:11:58.764Z">
 <meta property="article:author" content="xichuanly">
-<meta property="article:tag" content="blog">
-<meta property="article:tag" content="math">
-<meta property="article:tag" content="notes">
-<meta property="article:tag" content="robotics">
+<meta property="article:tag" content="transformer">
+<meta property="article:tag" content="笔记">
 <meta name="twitter:card" content="summary">
   
   
@@ -146,36 +146,39 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
+            <article id="post-笔记/transformer/Decoder" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
   
+    <h1 class="article-title" itemprop="name">
+      Decoder
+    </h1>
   
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2026" class="archive-year">2026</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/" class="archive-article-date">
+
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/" class="archive-article-date">
   	<time datetime="2026-05-15T07:02:19.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
 </a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Decoder/">Decoder</a>
-    </h1>
-  
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>decoder和encoder区别：<br>	encoder负责非线性的提取信息细节，decoder则有两个输入，一部分是encoder提取的原文信息；一方面是decoder以前生成的上文信息。decoder的输出是一个一个的。<br>	decoder的block也不同于encoder，他由3个主要结构组成，中间填充Add&amp;Norm。<br>	三个核心是Masked Multi-Head Attention，Cross attention，FFN<br>Masked Multi-Head Attention：<br>	流程：第一步shifted output：将已输出内容右移一个token，生成一个占位符$<SOS>$ ,这个符号的向量是随机生成的，在训练中，会被推向“开始”含义的词嵌入向量的位置。同时填充大量占位符$<PAD>$（补全矩阵要求格式） ，通过Padding Mask，在attention中不作为有效单词。<br>	第二步：还是计算QKV相乘，在计算attention scores之后，加上一个下三角矩阵。$$\text{MaskedAttention}(Q, K, V) &#x3D; \text{Softmax}\left(\frac{QK^T + M}{\sqrt{d_k}}\right)V$$<br>	矩阵的形状和$QK^T$ 一样，规则是$$M_{ij} &#x3D; \begin{cases} 0 &amp; \text{if } i \geq j \ -\infty &amp; \text{if } i &lt; j \end{cases}$$<br>	也就是$$M &#x3D; \begin{bmatrix} 0 &amp; -\infty &amp; -\infty \ 0 &amp; 0 &amp; -\infty \ 0 &amp; 0 &amp; 0 \end{bmatrix}$$<br>	PS:为什么是下三角：在$QK^T$ 中，行代表已经输出的token，列代表参考的token。如果i&lt;j，就代表现在的词还没有生成出来，应该被屏蔽（为什么不取等，因为输出右移了）。<br>	这样，还没有出现的信息在softmax中化为0，相当于完全没有权重。<br>	第三步：正常加权<br>Cross attention：Q为掩码注意力的output生成，KV来自encoder<br>为什么训练时不能看到未来token：如果训练时能看到，训练之后模型会依赖于看到未来的信息，产生逻辑错误。</p>
+<p>mask生成代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class to generate a mask</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#need pad_id</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MaskGenerator</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, pad_id=<span class="number">0</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.pad_id = pad_id</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_src_mask</span>(<span class="params">self, src_id</span>):</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">        <span class="comment"># 只要不是 PAD 就是有效位 (True)</span></span><br><span class="line"></span><br><span class="line">        src_mask = (src_id != <span class="variable language_">self</span>.pad_id).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> src_mask.<span class="built_in">int</span>()</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_tgt_mask</span>(<span class="params">self, tgt_id</span>):</span><br><span class="line"></span><br><span class="line">        _, tgt_len = tgt_id.shape</span><br><span class="line"></span><br><span class="line">        device = tgt_id.device</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 1. 生成 Padding Mask: 找出哪些位置不是 PAD</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># shape: (Batch, 1, 1, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        pad_mask = (tgt_id != <span class="variable language_">self</span>.pad_id).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. 生成 Causal Mask: 下半三角矩阵 (对角线及以下为 True)</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># shape: (tgt_len, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        causal_mask = torch.tril(torch.ones((tgt_len, tgt_len), device=device)).<span class="built_in">bool</span>()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. 逻辑与运算 (&amp;)</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># PyTorch 的广播机制会自动将 pad_mask 的最后一个维度与 causal_mask 的列对齐</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 结果 shape: (Batch, 1, tgt_len, tgt_len)</span></span><br><span class="line"></span><br><span class="line">        tgt_mask = pad_mask &amp; causal_mask</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> tgt_mask.<span class="built_in">int</span>()</span><br></pre></td></tr></table></figure>
 
-        <div class="article-info info-on-right">
-          
+<p>decoder代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#a class for decoder</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#input shape: (Batch, Seq_Len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#output (batch_size, seq_len, hidden_size)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DecoderLayer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hidden_size, num_heads, middle_len, esp = <span class="number">1e-5</span></span>):</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.hidden_size = hidden_size</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.esp = esp</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.middle_len = middle_len</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.masked_attention =  MultiHeadAttention(hidden_size= hidden_size, num_heads= num_heads)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.cross_attention =  MultiHeadAttention(hidden_size= hidden_size, num_heads= num_heads)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln1 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln2 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.ln3 = Layer_Norm(hidden_size= hidden_size, esp= <span class="variable language_">self</span>.esp)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.FNN = FFN(hidden_size= hidden_size, middle_len= middle_len)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, scr, de_in, self_attn_mask=<span class="literal">None</span>, scr_mask=<span class="literal">None</span></span>):</span><br><span class="line"></span><br><span class="line">        de_in_mat = <span class="variable language_">self</span>.masked_attention(de_in, mask = self_attn_mask)</span><br><span class="line"></span><br><span class="line">        de_in_mat_r = de_in + de_in_mat</span><br><span class="line"></span><br><span class="line">        de_in_mat_n = <span class="variable language_">self</span>.ln1(de_in_mat_r)</span><br><span class="line"></span><br><span class="line">        de_in_cat = <span class="variable language_">self</span>.cross_attention(de_in_mat_n, key = scr, value = scr, mask = scr_mask)</span><br><span class="line"></span><br><span class="line">        de_in_cat_r = de_in_mat_n + de_in_cat</span><br><span class="line"></span><br><span class="line">        de_in_cat_n = <span class="variable language_">self</span>.ln2(de_in_cat_r)</span><br><span class="line"></span><br><span class="line">        de_in_F = <span class="variable language_">self</span>.FNN(de_in_cat_n)</span><br><span class="line"></span><br><span class="line">        de_in_F_r = de_in_F + de_in_cat_n</span><br><span class="line"></span><br><span class="line">        de_in_F_n = <span class="variable language_">self</span>.ln3(de_in_F_r)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> de_in_F_n</span><br></pre></td></tr></table></figure>
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -191,7 +194,7 @@
 		</ul>
 	</div>
 
-          
+      
 	<div class="article-category tagcloud">
 		<i class="icon-book icon"></i>
 		<ul class="article-tag-list">
@@ -208,533 +211,65 @@
 	</div>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/" class="archive-article-date">
-  	<time datetime="2026-05-15T07:00:52.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Encoder</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Encoder/">Encoder</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
+        
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    目录，不存在的…
+                    </div>
+                </span>
+            </div>
         </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/" class="archive-article-date">
-  	<time datetime="2026-05-15T07:00:16.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Position-encoder/">Position-encoder</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
+        
+    </div>
+</aside>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:59:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Multi-attention/">Multi-attention</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:59:03.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/">Attention</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/transformer//" class="article-tag-list-link color2">transformer</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/" class="archive-article-date">
-  	<time datetime="2026-05-15T06:49:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/">建模方法</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/" class="archive-article-date">
-  	<time datetime="2026-05-12T16:57:25.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-13</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/">总览</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/" class="archive-article-date">
-  	<time datetime="2026-05-12T11:33:01.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-12</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/">一阶运动学与静力学</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/" class="archive-article-date">
-  	<time datetime="2026-05-11T13:01:44.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E6%AD%A3%E5%90%91%E8%BF%90%E5%8A%A8%E5%AD%A6/">正向运动学</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
-  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/11/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">刚体运动小结</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/笔记/现代机器人学笔记//" class="article-tag-list-link color4">现代机器人学笔记</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
   
   
-    </div></section>
   
 
-    
-    <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/archives/page/2/">2</a><a class="extend next" rel="next" href="/archives/page/2/">Next &raquo;</a>
-    </nav>
+  
+
+  
+
   
 
 
@@ -758,8 +293,8 @@
 	var yiliaConfig = {
 		mathjax: true,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,

@@ -6,20 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
-  <title>Tag: 随笔 | 西川の小屋</title>
+  <title>建模方法 | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="xichuanly 的个人博客">
-<meta property="og:type" content="website">
-<meta property="og:title" content="西川の小屋">
-<meta property="og:url" content="https://xichuanly.github.io/tags/%E9%9A%8F%E7%AC%94/index.html">
+  <meta name="description" content="加载方法：Mujoco可以读取MJCF或者URDF格式的纯文本XML文件，MJCF 和 URDF 文件使用 mj_loadXML 加载，而 MJB 文件则使用 mj_loadModel 加载。加载过程： XML通过 TinyXML 解析器将其解析为文档对象模型（DOM），然后对该 DOM 进行处理，并将其转换为高级的 mjSpec 对象。一个有效的 XML 文件具有唯一的顶级元素。对于 MJCF，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="建模方法">
+<meta property="og:url" content="https://xichuanly.github.io/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="xichuanly 的个人博客">
+<meta property="og:description" content="加载方法：Mujoco可以读取MJCF或者URDF格式的纯文本XML文件，MJCF 和 URDF 文件使用 mj_loadXML 加载，而 MJB 文件则使用 mj_loadModel 加载。加载过程： XML通过 TinyXML 解析器将其解析为文档对象模型（DOM），然后对该 DOM 进行处理，并将其转换为高级的 mjSpec 对象。一个有效的 XML 文件具有唯一的顶级元素。对于 MJCF，">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-15T06:49:46.000Z">
+<meta property="article:modified_time" content="2026-05-15T07:11:58.762Z">
 <meta property="article:author" content="xichuanly">
-<meta property="article:tag" content="blog">
-<meta property="article:tag" content="math">
-<meta property="article:tag" content="notes">
-<meta property="article:tag" content="robotics">
+<meta property="article:tag" content="mujoco自用">
+<meta property="article:tag" content="笔记">
 <meta name="twitter:card" content="summary">
   
   
@@ -146,71 +146,177 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-笔记/mujoco自用/建模方法" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2026" class="archive-year">2026</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/" class="archive-article-date">
-  	<time datetime="2026-05-11T06:55:15.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-11</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2026/05/11/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8%E5%B0%8F%E7%BB%93/">刚体运动小结</a>
+    <h1 class="article-title" itemprop="name">
+      建模方法
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
+        
+        <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95/" class="archive-article-date">
+  	<time datetime="2026-05-15T06:49:46.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-05-15</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>加载方法：Mujoco可以读取MJCF或者URDF格式的纯文本XML文件，MJCF 和 URDF 文件使用 <code>mj_loadXML</code> 加载，而 MJB 文件则使用 <code>mj_loadModel</code> 加载。<br>加载过程： XML通过 TinyXML 解析器将其解析为文档对象模型（DOM），然后对该 DOM 进行处理，并将其转换为高级的 <code>mjSpec</code> 对象。一个有效的 XML 文件具有唯一的顶级元素。对于 MJCF，该元素必须是 <code>mujoco</code>；对于 URDF，则必须是 <code>robot</code></p>
+<p>编译过程：一旦通过加载 MJCF 文件、URDF 文件或通过编程方式创建了高级 <code>mjSpec</code> 对象，它就会被编译成 <code>mjModel</code>。一旦遇到错误编译将终止，生成的错误信息包含 XML 文件中的行号和列号。解析器使用自定义的 schema（模式）来确保文件结构、元素和属性的有效性。随后，编译器会应用许多额外的语义检查。最后，对编译后的模型执行一个仿真步，并拦截任何运行时错误。后者是通过（临时）将 <code>mju_user_error</code> 设置为指向一个能抛出 C++ 异常的函数来实现的</p>
+<p>保存模型：MJCF 模型可以由多个（被包含的）XML 文件以及从 XML 引用的网格、高度场和纹理组成。编译后，所有这些文件的内容会被整合到 <code>mjModel</code> 中，并可以通过 <code>mj_saveModel</code> 保存为二进制的 MJB 文件。<br>也可以通过 <code>mj_saveLastXML</code> 将编译后的 <code>mjSpec</code> 保存为 MJCF 格式。需要注意的是，编译后的模型无法进行结构性更改（只能改数值，不能改结构）。导出的 XML 结构可能和你最初手写的长得不一样。在导出的文件里，所有的坐标都会被强制转换为局部坐标，每一个刚体的位置、方向、惯性张量都会被毫无保留地明确写出来</p>
+<p>MJCF建模：MJCF 文件的主体部分是由嵌套的 <code>body</code> 元素构成的 XML 树，顶级的 <code>body</code> 是特殊的，称为 <code>worldbody</code>。在 MJCF 中，从 XML 的角度看，子 <code>body</code> 就字面意义上是父 <code>body</code> 的子元素。<br>当在一个 <code>body</code> 内部定义 <code>joint</code> 时，其作用不是连接父 body 和子 body，而是在它们之间创建运动自由度。如果某个 <code>body</code> 内部没有定义任何 <code>joint</code>，则该 <code>body</code> 与其父 body 固连（焊接）。MJCF 中的一个 <code>body</code> 可以包含多个 <code>joint</code>，因此无需引入虚拟 body 来创建复合关节。只需在同一个 <code>body</code> 内部定义组成所需复合关节的所有基本关节即可。例如，可以使用两个滑块关节和一个铰链关节来模拟一个在平面内运动的 body。</p>
+<p>默认设置：<br>MuJoCo 根据以下优先级（从高到低）来决定物体的最终颜色：</p>
+<ol>
+<li><p><strong>直接定义（显式赋值）：</strong> 直接在物体标签上写的属性（如 <code>rgba=&quot;...&quot;</code>）。</p>
+</li>
+<li><p><strong>直接指定类（显式类）：</strong> 在物体标签上指明使用哪个 class（如 <code>class=&quot;...&quot;</code>）。</p>
+</li>
+<li><p><strong>父级管辖权（子类继承）：</strong> 包含该物体的父级节点指定的 <code>childclass=&quot;...&quot;</code>。</p>
+</li>
+<li><p><strong>全局默认：</strong> 什么都不写时，默认使用的第一个顶级 class。<br><code>&lt;default&gt;</code> 标签里定义的所有 <code>&lt;geom&gt;</code> 或 <code>&lt;body&gt;</code>，都不是物理世界中真实存在的东西，它们是“虚拟元素”（幽灵）。它们不会在仿真中产生任何碰撞、重力或渲染画面。<br>如果你对 <code>inertia</code> 或 <code>mass</code> 什么都不写（处于特殊的<strong>未定义状态</strong>），编译器会利用该物体绑定的几何体（geom）的形状和密度，用微积分<strong>自动帮你推导</strong>出精确的质量和惯性张量，但如果不小心修改了，将会失去这个功能。</p>
+</li>
+</ol>
+<p>坐标系：动力学树中所有坐标均是自身坐标系。如果 Body B 嵌套在 Body A 内部（B 是 A 的子级），那么 B 所填写的坐标，是相对于 A 的中心点（原点）的；几何体 (<code>geom</code>)、关节 (<code>joint</code>)、传感器测点 (<code>site</code>)、相机 (<code>camera</code>) 和光源 (<code>light</code>) 这些“附属组件”，它们的位置都是<strong>相对于包裹它们的那个 Body 的原点</strong>的。</p>
+<p>坐标系朝向：尽管底层运算都是四元数，但是mujoco提供了五种描述姿态的方式：</p>
+<h4 id="①-quat-四元数"><a href="#①-quat-四元数" class="headerlink" title="① quat (四元数)"></a>① <code>quat</code> (四元数)</h4><ul>
+<li><strong>输入:</strong> <code>quat=&quot;w x y z&quot;</code> (默认是 <code>&quot;1 0 0 0&quot;</code>，代表不旋转)。</li>
+<li><strong>适用场景:</strong> 你已经通过代码（比如 Python 或 C++ 的数学库）计算好了旋转，直接填入即可。这是官方最推荐的方式，因为它不需要编译器做任何转换，加载最快。</li>
+</ul>
+<h4 id="②-axisangle-轴角"><a href="#②-axisangle-轴角" class="headerlink" title="② axisangle (轴角)"></a>② <code>axisangle</code> (轴角)</h4><ul>
+<li><strong>输入:</strong> <code>axisangle=&quot;x y z a&quot;</code> (代表绕着向量 $(x, y, z)$ 旋转 $a$ 角度)。</li>
+<li><strong>物理直觉:</strong> 这非常符合刚体力学中的指数坐标（Exponential Coordinates）和右手法则。大拇指指向 $(x, y, z)$ 向量的方向，四指弯曲的方向就是旋转方向。</li>
+<li><strong>适用场景:</strong> 模拟单一关节的旋转（例如铰链绕特定轴转动一定角度）时非常直观。</li>
+</ul>
+<h4 id="③-euler-欧拉角"><a href="#③-euler-欧拉角" class="headerlink" title="③ euler (欧拉角)"></a>③ <code>euler</code> (欧拉角)</h4><ul>
+<li><strong>输入:</strong> <code>euler=&quot;roll pitch yaw&quot;</code> (绕 X、Y、Z 轴的旋转角度)。</li>
+<li><strong>适用场景:</strong> 最符合人类日常空间直觉的方式，常用于设置摄像机角度或初始摆放位置。</li>
+<li><strong>注意:</strong> 旋转的先后顺序取决于全局的 <code>compiler/eulerseq</code> 设置（默认通常是 xyz）。</li>
+</ul>
+<h4 id="④-xyaxes-指定-X-和-Y-轴朝向"><a href="#④-xyaxes-指定-X-和-Y-轴朝向" class="headerlink" title="④ xyaxes (指定 X 和 Y 轴朝向)"></a>④ <code>xyaxes</code> (指定 X 和 Y 轴朝向)</h4><ul>
+<li><strong>输入:</strong> <code>xyaxes=&quot;x1 y1 z1 x2 y2 z2&quot;</code> (前三个数是目标 X 轴的指向，后三个是目标 Y 轴的指向)。</li>
+<li><strong>机制:</strong> 给定 X 和 Y 后，Z 轴会自动通过叉乘（Cross-product）计算出来。</li>
+<li><strong>适用场景:</strong> 需要极其精确地对齐坐标系时。比如要把机械臂的末端执行器（End-effector）完美对齐到桌面的某个斜面上。</li>
+</ul>
+<h4 id="⑤-zaxis-指定-Z-轴朝向"><a href="#⑤-zaxis-指定-Z-轴朝向" class="headerlink" title="⑤ zaxis (指定 Z 轴朝向)"></a>⑤ <code>zaxis</code> (指定 Z 轴朝向)</h4><ul>
+<li><strong>输入:</strong> <code>zaxis=&quot;x y z&quot;</code>。</li>
+<li><strong>机制:</strong> 编译器会计算一个“最小旋转”，把物体原本朝上 (0,0,1) 的 Z 轴，掰到你指定的 $(x, y, z)$ 方向上。</li>
+<li><strong>适用场景:</strong> 专门针对<strong>具有旋转对称性的几何体</strong>（如圆柱体 <code>cylinder</code>、胶囊体 <code>capsule</code>、球体）或者<strong>光源</strong>。比如一根圆柱体，你只关心它指向哪里，不关心它自身绕中轴转了多少度，用 <code>zaxis</code> 就极其方便。</li>
+</ul>
+<p>求解器参数：</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">mujoco自用</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
+      
 	<div class="article-category tagcloud">
 		<i class="icon-book icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="/categories/随笔//" class="article-tag-list-link color3">随笔</a>
+        			<a href="/categories/笔记//" class="article-tag-list-link color3">笔记</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/笔记/mujoco自用//" class="article-tag-list-link color4">mujoco自用</a>
         		</li>
       		
 		</ul>
 	</div>
 
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2026/05/15/%E7%AC%94%E8%AE%B0/transformer/Attention/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Attention
+        
+      </div>
+    </a>
   
   
-    </div></section>
+    <a href="/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">总览</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+        <div class="toc-container tooltip-left">
+            <i class="icon-font icon-category"></i>
+            <div class="tooltip tooltip-east">
+                <span class="tooltip-item">
+                </span>
+                <span class="tooltip-content">
+                    <div class="toc-article">
+                    <ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A0-quat-%E5%9B%9B%E5%85%83%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">① quat (四元数)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A1-axisangle-%E8%BD%B4%E8%A7%92"><span class="toc-number">2.</span> <span class="toc-text">② axisangle (轴角)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A2-euler-%E6%AC%A7%E6%8B%89%E8%A7%92"><span class="toc-number">3.</span> <span class="toc-text">③ euler (欧拉角)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A3-xyaxes-%E6%8C%87%E5%AE%9A-X-%E5%92%8C-Y-%E8%BD%B4%E6%9C%9D%E5%90%91"><span class="toc-number">4.</span> <span class="toc-text">④ xyaxes (指定 X 和 Y 轴朝向)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A4-zaxis-%E6%8C%87%E5%AE%9A-Z-%E8%BD%B4%E6%9C%9D%E5%90%91"><span class="toc-number">5.</span> <span class="toc-text">⑤ zaxis (指定 Z 轴朝向)</span></a></li></ol>
+                    </div>
+                </span>
+            </div>
+        </div>
+        
+    </div>
+</aside>
+
+
+
+  
+  
   
 
-    
+  
+
+  
+
+  
 
 
           </div>
@@ -233,9 +339,9 @@
 	var yiliaConfig = {
 		mathjax: true,
 		isHome: false,
-		isPost: false,
+		isPost: true,
 		isArchive: false,
-		isTag: true,
+		isTag: false,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,
@@ -324,7 +430,23 @@ MathJax.Hub.Queue(function() {
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">随笔</a>
+                <a href="javascript:void(0)" class="js-tag color3">笔记</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">mujoco自用</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">vla初步认知</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">现代机器人学笔记</a>
               </li>
             
             <div class="clearfix"></div>
