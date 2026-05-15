@@ -16,7 +16,7 @@
 <meta property="og:description" content="RNN（循环神经网络）的原理和局限性原理： 由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f(Wx+b)$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-04-22T16:37:59.000Z">
-<meta property="article:modified_time" content="2026-05-15T08:09:48.650Z">
+<meta property="article:modified_time" content="2026-05-15T08:26:04.963Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="transformer">
 <meta property="article:tag" content="笔记">
@@ -168,7 +168,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h2 id="RNN（循环神经网络）的原理和局限性"><a href="#RNN（循环神经网络）的原理和局限性" class="headerlink" title="RNN（循环神经网络）的原理和局限性"></a>RNN（循环神经网络）的原理和局限性</h2><p><strong>原理：</strong> 由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f(Wx+b)$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_n$ 直接进入传统神经网络运算得到输出结果（注意：$h_0$ 最开始就有，输入和输出等长，有n个x，就有$h_n$ 和n个y<br><strong>应用：</strong> 对于有明显顺序性的数据，特别适合用RNN，比如通过过去30天的股票信息，去预测明天得到股票信息<br><strong>局限性：</strong> 长期依赖问题：长期依赖直觉上来理解，就是随着序列长度的提升，靠前状态对靠后状态的影响会越来越小。而本质是大量连乘带来的梯度问题：当使用优化器去处理梯度的时候，反向传播的误差会随着层数的增加而指数性增长，比如，$1.01^{200}&#x3D;7.31$ ,进而发生模型不再学习的梯度消失问题与算力爆炸的梯度爆炸问题。</p>
-<h2 id="LSTM（长短期记忆网络）的原理和局限性"><a href="#LSTM（长短期记忆网络）的原理和局限性" class="headerlink" title="LSTM（长短期记忆网络）的原理和局限性"></a>LSTM（长短期记忆网络）的原理和局限性</h2><p><strong>原理：</strong> 为了缓解RNN的长期依赖问题，LSTM通过设计一种独特的激活函数，只保留关键的信息进行记忆。一个LSTM的激活函数，由遗忘门、输入门、输出门构成。<br>在遗忘门中，输入$x_t$ 和$h_{t-1}$ 一起传入sigmoid层中，进行$f_t &#x3D; \sigma(W_{fx}x_t + W_{fh}h_{t-1} + b_f)$ 在这一层中，根据以前的隐状态来判断现在的输入我应该记住多少以前的信息，比如输出是0，我就忘记以前的信息，输出是1，我就拼命记住。<br>在输入门中，我将通过$x_t$ 和$h_{t-1}$ 的tanh运算，获得一个候选细胞状态$\tilde{C}<em>t$ ，这个状态会记录过去隐状态与现在输入的正负向关系，而$x_t$ 和$h</em>{t-1}$ 会在这一层中通过另一个sigmoid层，获得$i_t$ ，记录这个正负关系的价值，两者相乘后，便得到了我现在的输入应该向旧的细胞状态补充多少信息。<br>中间，我们进行$C_t &#x3D; f_t * C_{t-1} + i_t * \tilde{C}<em>t$ 的运算，用来更新细胞状态。<br>最后，是输出层。在这一层中，我们通过$x_t$ 和$h</em>{t-1}$ 的又一个sigmoid运算$o_t &#x3D; \sigma(W_o [h_{t-1}, x_t] + b_o)$，获取过去的隐状态与当前输入要对现在的输出产生多大影响，最后$h_t &#x3D; o_t * \tanh(C_t)$ 获得当前隐状态，重复和RNN一样的输出方式。<br>相比于RNN，LSTM更加细腻的处理了过去序列的记忆方式，忽略了一段句子中不重要的内容，保留有价值的内容，从而缓解了梯度爆炸&#x2F;消失的问题。<br><strong>局限性：</strong> </p>
+<h2 id="LSTM（长短期记忆网络）的原理和局限性"><a href="#LSTM（长短期记忆网络）的原理和局限性" class="headerlink" title="LSTM（长短期记忆网络）的原理和局限性"></a>LSTM（长短期记忆网络）的原理和局限性</h2><p><strong>原理：</strong> 为了缓解RNN的长期依赖问题，LSTM通过设计一种独特的激活函数，只保留关键的信息进行记忆。一个LSTM的激活函数，由遗忘门、输入门、输出门构成。<br>在遗忘门中，输入<script type="math/tex">x_t</script> 和<script type="math/tex">h_{t-1}</script> 一起传入sigmoid层中，进行<script type="math/tex">f_t = \sigma(W_{fx}x_t + W_{fh}h_{t-1} + b_f)</script> 在这一层中，根据以前的隐状态来判断现在的输入我应该记住多少以前的信息，比如输出是0，我就忘记以前的信息，输出是1，我就拼命记住。<br>在输入门中，我将通过<script type="math/tex">x_t</script> 和<script type="math/tex">h_{t-1}</script> 的tanh运算，获得一个候选细胞状态<script type="math/tex">\tilde{C}_t</script> ，这个状态会记录过去隐状态与现在输入的正负向关系，而<script type="math/tex">x_t</script> 和<script type="math/tex">h_{t-1}</script> 会在这一层中通过另一个sigmoid层，获得<script type="math/tex">i_t</script> ，记录这个正负关系的价值，两者相乘后，便得到了我现在的输入应该向旧的细胞状态补充多少信息。<br>中间，我们进行<script type="math/tex">C_t = f_t * C_{t-1} + i_t * \tilde{C}_t</script> 的运算，用来更新细胞状态。<br>最后，是输出层。在这一层中，我们通过<script type="math/tex">x_t</script> 和<script type="math/tex">h_{t-1}</script> 的又一个sigmoid运算<script type="math/tex">o_t = \sigma(W_o [h_{t-1}, x_t] + b_o)</script>，获取过去的隐状态与当前输入要对现在的输出产生多大影响，最后<script type="math/tex">h_t = o_t * \tanh(C_t)</script> 获得当前隐状态，重复和RNN一样的输出方式。<br>相比于RNN，LSTM更加细腻的处理了过去序列的记忆方式，忽略了一段句子中不重要的内容，保留有价值的内容，从而缓解了梯度爆炸&#x2F;消失的问题。<br><strong>局限性：</strong> </p>
 <ol>
 <li>没有根本解决长期依赖问题，只是缓解，在面对更长的序列时还是会梯度爆炸。</li>
 <li>顺序性的结构决定了无法进行并行运算，算力困境明显</li>
@@ -198,11 +198,11 @@
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
         		</li>
       		 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">随笔</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">transformer</a>
         		</li>
       		
 		</ul>
@@ -406,7 +406,7 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
+                <a href="javascript:void(0)" class="js-tag color3">vla初步认知</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -418,11 +418,11 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">vla初步认知</a>
+                <a href="javascript:void(0)" class="js-tag color4">现代机器人学笔记</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">现代机器人学笔记</a>
+                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
               </li>
             
             <div class="clearfix"></div>
