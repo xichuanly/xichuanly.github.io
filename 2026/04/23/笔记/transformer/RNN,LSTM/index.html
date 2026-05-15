@@ -8,15 +8,15 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>RNN,LSTM | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="RNN（循环神经网络）的原理和局限性：	原理：由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f（Wx+b）$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h">
+  <meta name="description" content="RNN（循环神经网络）的原理和局限性原理： 由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f(Wx+b)$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RNN,LSTM">
 <meta property="og:url" content="https://xichuanly.github.io/2026/04/23/%E7%AC%94%E8%AE%B0/transformer/RNN,LSTM/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="RNN（循环神经网络）的原理和局限性：	原理：由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f（Wx+b）$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h">
+<meta property="og:description" content="RNN（循环神经网络）的原理和局限性原理： 由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f(Wx+b)$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-04-22T16:37:59.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.896Z">
+<meta property="article:modified_time" content="2026-05-15T08:07:38.823Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="transformer">
 <meta property="article:tag" content="笔记">
@@ -167,8 +167,20 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>RNN（循环神经网络）的原理和局限性：<br>	原理：由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f（Wx+b）$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_n$ 直接进入传统神经网络运算得到输出结果（注意：$h_0$ 最开始就有，输入和输出等长，有n个x，就有$h_n$ 和n个y<br>	应用：对于有明显顺序性的数据，特别适合用RNN，比如通过过去30天的股票信息，去预测明天得到股票信息<br>	局限性：长期依赖问题：长期依赖直觉上来理解，就是随着序列长度的提升，靠前状态对靠后状态的影响会越来越小。而本质是大量连乘带来的梯度问题：当使用优化器去处理梯度的时候，反向传播的误差会随着层数的增加而指数性增长，比如，$1.01^{200}&#x3D;7.31$ ,进而发生模型不再学习的梯度消失问题与算力爆炸的梯度爆炸问题。</p>
-<p>LSTM（长短期记忆网络）的原理和局限性<br>	原理：为了缓解RNN的长期依赖问题，LSTM通过设计一种独特的激活函数，只保留关键的信息进行记忆。一个LSTM的激活函数，由遗忘门、输入门、输出门构成。<br>	在遗忘门中，输入$x_t$ 和$h_{t-1}$ 一起传入sigmoid层中，进行$f_t &#x3D; \sigma(W_{fx}x_t + W_{fh}h_{t-1} + b_f)$ 在这一层中，根据以前的隐状态来判断现在的输入我应该记住多少以前的信息，比如输出是0，我就忘记以前的信息，输出是1，我就拼命记住。<br>	在输入门中，我将通过$x_t$ 和$h_{t-1}$ 的tanh运算，获得一个候选细胞状态$\tilde{C}<em>t$ ，这个状态会记录过去隐状态与现在输入的正负向关系，而$x_t$ 和$h</em>{t-1}$ 会在这一层中通过另一个sigmoid层，获得$i_t$ ，记录这个正负关系的价值，两者相乘后，便得到了我现在的输入应该向旧的细胞状态补充多少信息。<br>	中间，我们进行$C_t &#x3D; f_t * C_{t-1} + i_t * \tilde{C}<em>t$ 的运算，用来更新细胞状态。<br>	最后，是输出层。在这一层中，我们通过$x_t$ 和$h</em>{t-1}$ 的又一个sigmoid运算$o_t &#x3D; \sigma(W_o [h_{t-1}, x_t] + b_o)$，获取过去的隐状态与当前输入要对现在的输出产生多大影响，最后$h_t &#x3D; o_t * \tanh(C_t)$ 获得当前隐状态，重复和RNN一样的输出方式。<br>	相比于RNN，LSTM更加细腻的处理了过去序列的记忆方式，忽略了一段句子中不重要的内容，保留有价值的内容，从而缓解了梯度爆炸&#x2F;消失的问题。<br>	局限性：<br>	1.没有根本解决长期依赖问题，只是缓解，在面对更长的序列时还是会梯度爆炸。<br>	2.顺序性的结构决定了无法进行并行运算，算力困境明显<br>CNN面对序列问题的局限性：<br>	CNN在设计的时候就没有记忆力机制，除非通过调整池化，卷积核来增加感受野，不然很难关联上下文。<br>为什么需要transformer：<br>	RNN有两个痛点，一个是长期依赖，另一个是无法并行运算。transformer将两个问题同时解决了。首先是并行运算问题，在RNN中，无法并行运算是顺序结构带来的，而在transformer中，输入不再是顺序的，而是全局性的输入，这意味这可以进行并行计算，缓解算力不足的问题。另一个问题是长期依赖，transdormer通过自注意力机制，在全局范围内感知其他元素对自己的影响，不需要逐步传递信息，也就解决了梯度消失的问题（梯度爆炸仍然没有解决）。<br>transformer相比RNN的优势：<br>	1.支持并行运算<br>	2.解决了长期依赖问题<br>	3.tranformer可以根据输入附近的单词调整词向量位置，从而区分像“苹果手机”的“苹果”与“苹果树”的“苹果”之间的关系。<br>为什么要有attention：<br>	我们的计算资源是有限的，在面对复杂信息时，我们需要关注主要特征并忽略次要特征。注意力的本质就是对信息建立不同的权重，信息权重越高我们越应该重视。</p>
+        <h2 id="RNN（循环神经网络）的原理和局限性"><a href="#RNN（循环神经网络）的原理和局限性" class="headerlink" title="RNN（循环神经网络）的原理和局限性"></a>RNN（循环神经网络）的原理和局限性</h2><p><strong>原理：</strong> 由于现实中有大量的序列形数据，RNN使用了一种名为隐状态h的量来记录这种序列，传统的神经网络可以表述为$y&#x3D;f(Wx+b)$ ，而RNN是$h_n &#x3D; f(Uh_{n-1} + Wx +b)$ 其中f是非线性的激活函数，如ReLu 。这样，过去的信息就被记录在h中了,值得注意的是，U,W,b正是我们需要训练得到的量。  输出则是$h_n$ 直接进入传统神经网络运算得到输出结果（注意：$h_0$ 最开始就有，输入和输出等长，有n个x，就有$h_n$ 和n个y<br><strong>应用：</strong> 对于有明显顺序性的数据，特别适合用RNN，比如通过过去30天的股票信息，去预测明天得到股票信息<br><strong>局限性：</strong> 长期依赖问题：长期依赖直觉上来理解，就是随着序列长度的提升，靠前状态对靠后状态的影响会越来越小。而本质是大量连乘带来的梯度问题：当使用优化器去处理梯度的时候，反向传播的误差会随着层数的增加而指数性增长，比如，$1.01^{200}&#x3D;7.31$ ,进而发生模型不再学习的梯度消失问题与算力爆炸的梯度爆炸问题。</p>
+<h2 id="LSTM（长短期记忆网络）的原理和局限性"><a href="#LSTM（长短期记忆网络）的原理和局限性" class="headerlink" title="LSTM（长短期记忆网络）的原理和局限性"></a>LSTM（长短期记忆网络）的原理和局限性</h2><p><strong>原理：</strong> 为了缓解RNN的长期依赖问题，LSTM通过设计一种独特的激活函数，只保留关键的信息进行记忆。一个LSTM的激活函数，由遗忘门、输入门、输出门构成。<br>在遗忘门中，输入$x_t$ 和$h_{t-1}$ 一起传入sigmoid层中，进行$f_t &#x3D; \sigma(W_{fx}x_t + W_{fh}h_{t-1} + b_f)$ 在这一层中，根据以前的隐状态来判断现在的输入我应该记住多少以前的信息，比如输出是0，我就忘记以前的信息，输出是1，我就拼命记住。<br>在输入门中，我将通过$x_t$ 和$h_{t-1}$ 的tanh运算，获得一个候选细胞状态$\tilde{C}<em>t$ ，这个状态会记录过去隐状态与现在输入的正负向关系，而$x_t$ 和$h</em>{t-1}$ 会在这一层中通过另一个sigmoid层，获得$i_t$ ，记录这个正负关系的价值，两者相乘后，便得到了我现在的输入应该向旧的细胞状态补充多少信息。<br>中间，我们进行$C_t &#x3D; f_t * C_{t-1} + i_t * \tilde{C}<em>t$ 的运算，用来更新细胞状态。<br>最后，是输出层。在这一层中，我们通过$x_t$ 和$h</em>{t-1}$ 的又一个sigmoid运算$o_t &#x3D; \sigma(W_o [h_{t-1}, x_t] + b_o)$，获取过去的隐状态与当前输入要对现在的输出产生多大影响，最后$h_t &#x3D; o_t * \tanh(C_t)$ 获得当前隐状态，重复和RNN一样的输出方式。<br>相比于RNN，LSTM更加细腻的处理了过去序列的记忆方式，忽略了一段句子中不重要的内容，保留有价值的内容，从而缓解了梯度爆炸&#x2F;消失的问题。<br><strong>局限性：</strong> </p>
+<ol>
+<li>没有根本解决长期依赖问题，只是缓解，在面对更长的序列时还是会梯度爆炸。</li>
+<li>顺序性的结构决定了无法进行并行运算，算力困境明显</li>
+</ol>
+<h2 id="CNN-面对序列问题的局限性"><a href="#CNN-面对序列问题的局限性" class="headerlink" title="CNN 面对序列问题的局限性"></a>CNN 面对序列问题的局限性</h2><p>CNN在设计的时候就没有记忆力机制，除非通过调整池化，卷积核来增加感受野，不然很难关联上下文。</p>
+<h2 id="为什么需要-Transformer"><a href="#为什么需要-Transformer" class="headerlink" title="为什么需要 Transformer"></a>为什么需要 Transformer</h2><p>RNN有两个痛点，一个是长期依赖，另一个是无法并行运算。transformer将两个问题同时解决了。首先是并行运算问题，在RNN中，无法并行运算是顺序结构带来的，而在transformer中，输入不再是顺序的，而是全局性的输入，这意味这可以进行并行计算，缓解算力不足的问题。另一个问题是长期依赖，transdormer通过自注意力机制，在全局范围内感知其他元素对自己的影响，不需要逐步传递信息，也就解决了梯度消失的问题（梯度爆炸仍然没有解决）。</p>
+<h2 id="Transformer-相比-RNN-的优势"><a href="#Transformer-相比-RNN-的优势" class="headerlink" title="Transformer 相比 RNN 的优势"></a>Transformer 相比 RNN 的优势</h2><ol>
+<li>支持并行运算</li>
+<li>解决了长期依赖问题</li>
+<li>tranformer可以根据输入附近的单词调整词向量位置，从而区分像“苹果手机”的“苹果”与“苹果树”的“苹果”之间的关系。</li>
+</ol>
+<h2 id="为什么要有-Attention"><a href="#为什么要有-Attention" class="headerlink" title="为什么要有 Attention"></a>为什么要有 Attention</h2><p>我们的计算资源是有限的，在面对复杂信息时，我们需要关注主要特征并忽略次要特征。注意力的本质就是对信息建立不同的权重，信息权重越高我们越应该重视。</p>
 
       
 
@@ -257,7 +269,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#RNN%EF%BC%88%E5%BE%AA%E7%8E%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%EF%BC%89%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E5%B1%80%E9%99%90%E6%80%A7"><span class="toc-number">1.</span> <span class="toc-text">RNN（循环神经网络）的原理和局限性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#LSTM%EF%BC%88%E9%95%BF%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%E7%BD%91%E7%BB%9C%EF%BC%89%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E5%B1%80%E9%99%90%E6%80%A7"><span class="toc-number">2.</span> <span class="toc-text">LSTM（长短期记忆网络）的原理和局限性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CNN-%E9%9D%A2%E5%AF%B9%E5%BA%8F%E5%88%97%E9%97%AE%E9%A2%98%E7%9A%84%E5%B1%80%E9%99%90%E6%80%A7"><span class="toc-number">3.</span> <span class="toc-text">CNN 面对序列问题的局限性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Transformer"><span class="toc-number">4.</span> <span class="toc-text">为什么需要 Transformer</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Transformer-%E7%9B%B8%E6%AF%94-RNN-%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="toc-number">5.</span> <span class="toc-text">Transformer 相比 RNN 的优势</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89-Attention"><span class="toc-number">6.</span> <span class="toc-text">为什么要有 Attention</span></a></li></ol>
                     </div>
                 </span>
             </div>
@@ -402,11 +414,11 @@ MathJax.Hub.Queue(function() {
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">vla初步认知</a>
+                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color2">transformer</a>
+                <a href="javascript:void(0)" class="js-tag color3">vla初步认知</a>
               </li>
              
               <li class="article-tag-list-item">
