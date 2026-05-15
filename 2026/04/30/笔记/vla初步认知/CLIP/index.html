@@ -8,16 +8,16 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>CLIP | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="CLIP核心思想：	采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。	能力范围：1.执行分类任务2.为其他模型提供视觉模块	主要组成：text encoder；image encoder；多模态特征空间	text encoder：	在文">
+  <meta name="description" content="CLIP核心思想采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。能力范围： 1.执行分类任务2.为其他模型提供视觉模块主要组成： text encoder；image encoder；多模态特征空间 text encoder在文本开头加">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CLIP">
 <meta property="og:url" content="https://xichuanly.github.io/2026/04/30/%E7%AC%94%E8%AE%B0/vla%E5%88%9D%E6%AD%A5%E8%AE%A4%E7%9F%A5/CLIP/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="CLIP核心思想：	采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。	能力范围：1.执行分类任务2.为其他模型提供视觉模块	主要组成：text encoder；image encoder；多模态特征空间	text encoder：	在文">
+<meta property="og:description" content="CLIP核心思想采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。能力范围： 1.执行分类任务2.为其他模型提供视觉模块主要组成： text encoder；image encoder；多模态特征空间 text encoder在文本开头加">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://xichuanly.github.io/img/notes/CLIP%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
 <meta property="article:published_time" content="2026-04-29T16:18:14.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.897Z">
+<meta property="article:modified_time" content="2026-05-15T12:17:16.290Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="vla初步认知">
 <meta property="article:tag" content="笔记">
@@ -169,7 +169,23 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>CLIP核心思想：<br>	采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。<br>	能力范围：1.执行分类任务2.为其他模型提供视觉模块<br>	主要组成：text encoder；image encoder；多模态特征空间<br>	<img src="/img/notes/CLIP%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="CLIP流程图"><br>text encoder：<br>	在文本开头加上$<SOS>$ 在文本末尾加上$<EOS>$ ，经过类似transformer的encoder（注意力是掩码注意力，之后EOS没有被遮住）之后，提取最后一行的向量，此时这个向量充满了整段文本的信息<br>image encoder<br>	类似ViT，先将图片分成多个固定大小的小块，一维展开后，生成一个等长的$<CLS>$ 向量，放在第0行，之后按照从上到下、从左到右的顺序将展开的小块拼接成一个矩阵$X_{new}$，接着生成一个等大的位置矩阵$E_{pos}$（注：一开始是随机数，这个是要学习的），记录每一个小块的位置并且直接相加$Z &#x3D; X_{new} + E_{pos}$，这些向量作为image token送入transformer encoder里，处理之后的矩阵取第一行，此时这个向量充满整张图片的信息。<br>多模态空间：<br>	将同一批次的数对image token和test token经过一个可学习的矩阵投影到同一维度的多模态空间，将两个矩阵每一行都进行L2变换，通过一一点乘的方式获得一个方阵，对角线上的代表同一对图文的相似度，非对角线的代表不同对的相似度。通过对称交叉熵损失的方式，先每一行softmax一下，计算匹配正确的概率，通过$$Loss_{I2T} &#x3D; -\frac{1}{N} \sum_{i&#x3D;1}^{N} \log \frac{\exp(L_{i,i})}{\sum_{j&#x3D;1}^{N} \exp(L_{i,j})}$$<br>	计算图对文的loss，再通过列的方式$$Loss_{T2I} &#x3D; -\frac{1}{N} \sum_{j&#x3D;1}^{N} \log \frac{\exp(L_{j,j})}{\sum_{i&#x3D;1}^{N} \exp(L_{i,j})}$$<br>	计算文对图的loss，两者平均得最终loss$$Loss_{total} &#x3D; \frac{Loss_{I2T} + Loss_{T2I}}{2}$$<br>	<br>对比学习和监督学习的区别：<br>	监督学习是评价和结果是不是标签，和标签差多远。而对比学习是同时有两个结果，正样本和负样本，训练的目的是排斥负样本，亲近正样本。训练结果并不是标签，而是一种空间里的分布。</p>
+        <h2 id="CLIP核心思想"><a href="#CLIP核心思想" class="headerlink" title="CLIP核心思想"></a>CLIP核心思想</h2><p>采用对比学习(contrastive Learning)，将图像信息和文本信息映射到同一个embedding空间中，尝试最大化不匹配数据对的距离，最小化匹配数据对的距离。而数据的来源则是带有字幕的互联网图像资源。<br><strong>能力范围：</strong> 1.执行分类任务2.为其他模型提供视觉模块<br><strong>主要组成：</strong> text encoder；image encoder；多模态特征空间<br><img src="/img/notes/CLIP%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="CLIP流程图"></p>
+<h2 id="text-encoder"><a href="#text-encoder" class="headerlink" title="text encoder"></a>text encoder</h2><p>在文本开头加上<code>&lt;SOS&gt;</code> 在文本末尾加上<code>&lt;EOS&gt;</code> ，经过类似transformer的encoder（注意力是掩码注意力，之后EOS没有被遮住）之后，提取最后一行的向量，此时这个向量充满了整段文本的信息</p>
+<h2 id="image-encoder"><a href="#image-encoder" class="headerlink" title="image encoder"></a>image encoder</h2><p>类似ViT，先将图片分成多个固定大小的小块，一维展开后，生成一个等长的<code>&lt;CLS&gt;</code> 向量，放在第0行，之后按照从上到下、从左到右的顺序将展开的小块拼接成一个矩阵<script type="math/tex">X_{new}</script>，接着生成一个等大的位置矩阵<script type="math/tex">E_{pos}</script>（注：一开始是随机数，这个是要学习的），记录每一个小块的位置并且直接相加<script type="math/tex">Z = X_{new} + E_{pos}</script>，这些向量作为image token送入transformer encoder里，处理之后的矩阵取第一行，此时这个向量充满整张图片的信息。</p>
+<h2 id="多模态空间"><a href="#多模态空间" class="headerlink" title="多模态空间"></a>多模态空间</h2><p>将同一批次的数对image token和test token经过一个可学习的矩阵投影到同一维度的多模态空间，将两个矩阵每一行都进行L2变换，通过一一点乘的方式获得一个方阵，对角线上的代表同一对图文的相似度，非对角线的代表不同对的相似度。通过对称交叉熵损失的方式，先每一行softmax一下，计算匹配正确的概率，通过</p>
+<script type="math/tex; mode=display">
+Loss_{I2T} = -\frac{1}{N} \sum_{i=1}^{N} \log \frac{\exp(L_{i,i})}{\sum_{j=1}^{N} \exp(L_{i,j})}
+</script>
+<p>计算图对文的loss，再通过列的方式</p>
+<script type="math/tex; mode=display">
+Loss_{T2I} = -\frac{1}{N} \sum_{j=1}^{N} \log \frac{\exp(L_{j,j})}{\sum_{i=1}^{N} \exp(L_{i,j})}
+</script>
+<p>计算文对图的loss，两者平均得最终loss</p>
+<script type="math/tex; mode=display">
+Loss_{total} = \frac{Loss_{I2T} + Loss_{T2I}}{2}
+</script>
+
+<h2 id="对比学习和监督学习的区别"><a href="#对比学习和监督学习的区别" class="headerlink" title="对比学习和监督学习的区别"></a>对比学习和监督学习的区别</h2><p>监督学习是评价和结果是不是标签，和标签差多远。而对比学习是同时有两个结果，正样本和负样本，训练的目的是排斥负样本，亲近正样本。训练结果并不是标签，而是一种空间里的分布。</p>
 
       
 
@@ -263,7 +279,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#CLIP%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="toc-number">1.</span> <span class="toc-text">CLIP核心思想</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#text-encoder"><span class="toc-number">2.</span> <span class="toc-text">text encoder</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#image-encoder"><span class="toc-number">3.</span> <span class="toc-text">image encoder</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%9A%E6%A8%A1%E6%80%81%E7%A9%BA%E9%97%B4"><span class="toc-number">4.</span> <span class="toc-text">多模态空间</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94%E5%AD%A6%E4%B9%A0%E5%92%8C%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">对比学习和监督学习的区别</span></a></li></ol>
                     </div>
                 </span>
             </div>

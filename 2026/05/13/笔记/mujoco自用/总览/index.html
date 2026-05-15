@@ -8,15 +8,15 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>总览 | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="模拟数据形式：	mjModel： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。	mjData ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。	mjModel">
+  <meta name="description" content="模拟数据形式mjModel： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。mjData ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。mjModel 由编译器">
 <meta property="og:type" content="article">
 <meta property="og:title" content="总览">
 <meta property="og:url" content="https://xichuanly.github.io/2026/05/13/%E7%AC%94%E8%AE%B0/mujoco%E8%87%AA%E7%94%A8/%E6%80%BB%E8%A7%88/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="模拟数据形式：	mjModel： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。	mjData ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。	mjModel">
+<meta property="og:description" content="模拟数据形式mjModel： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。mjData ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。mjModel 由编译器">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-12T16:57:25.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.870Z">
+<meta property="article:modified_time" content="2026-05-15T12:18:15.738Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="mujoco自用">
 <meta property="article:tag" content="笔记">
@@ -167,19 +167,19 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>模拟数据形式：<br>	<strong>mjModel</strong>： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。<br>	<strong>mjData</strong> ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。<br>	mjModel 由编译器构建。mjData 在运行时根据给定的 mjModel 构建。顶层API也体现这种分离</p>
+        <h2 id="模拟数据形式"><a href="#模拟数据形式" class="headerlink" title="模拟数据形式"></a>模拟数据形式</h2><p><strong>mjModel</strong>： 包含模型描述，并应保持恒定。其中还嵌入了其他包含仿真和可视化选项的结构体，这些选项偶尔需要更改，但由用户来操作。<br><strong>mjData</strong> ：包含所有动态变量和中间结果。它被用作一个草稿板，所有函数都从中读取输入并写入输出——这些输出随后成为仿真流程中后续阶段的输入。它还包含一个预分配且内部管理的堆栈，因此在模型初始化之后，运行时模块无需再调用内存分配函数。<br>mjModel 由编译器构建。mjData 在运行时根据给定的 mjModel 构建。顶层API也体现这种分离</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mj_step</span><span class="params">(<span class="type">const</span> mjModel* m, mjData* d)</span>;</span><br></pre></td></tr></table></figure>
-<p>Mujoco特点：可视化的GUI；并行计算（结构岛和岛休眠）；建模语言MJCF（一种高度优化的XML）；自带宏用来生成柔性材料； 支持引擎插件</p>
-<p>Mujoco的文件组织形式：在抽象层，我们给MJCF或者URDF，在内存中会变成mjSpec（一个C组织体）；在底层，XML会转化成二进制文件MJB，可以提高读取速度，引擎使用的是mjModel（一种编译后的C结构体），运行时全是mjModel在跑。<br>mjSpec 这个 C 结构体与 MJCF 文件格式一一对应。XML 加载器解析 MJCF 或 URDF 文件，创建相应的 mjSpec 并将其编译为 mjModel。用户可以通过编程方式创建 mjSpec，然后将其保存为 MJCF 文件或直接编译。</p>
+<p><strong>Mujoco特点：</strong> 可视化的GUI；并行计算（结构岛和岛休眠）；建模语言MJCF（一种高度优化的XML）；自带宏用来生成柔性材料； 支持引擎插件</p>
+<p><strong>Mujoco的文件组织形式：</strong> 在抽象层，我们给MJCF或者URDF，在内存中会变成mjSpec（一个C组织体）；在底层，XML会转化成二进制文件MJB，可以提高读取速度，引擎使用的是mjModel（一种编译后的C结构体），运行时全是mjModel在跑。<br>mjSpec 这个 C 结构体与 MJCF 文件格式一一对应。XML 加载器解析 MJCF 或 URDF 文件，创建相应的 mjSpec 并将其编译为 mjModel。用户可以通过编程方式创建 mjSpec，然后将其保存为 MJCF 文件或直接编译。</p>
 <p>（文本编辑器）→ MJCF&#x2F;URDF 文件 →（MuJoCo 解析器 → mjSpec → 编译器）→ mjModel</p>
 <p>（用户代码）→ mjSpec →（MuJoCo 编译器）→ mjModel</p>
 <p>MJB 文件 →（模型加载器）→ mjModel</p>
 <p>函数 mj_step 是顶层函数，用于将仿真状态推进一个时间步。</p>
-<p>每个模型都有三个选项可以修改：<br>mjOption：该结构体包含所有会影响物理仿真的选项。它用于选择算法并设置其参数、启用或禁用仿真流程中的不同部分，以及调整系统级别的物理属性（如重力）。<br>mjVisual：该结构体包含所有可视化选项。还有额外的 OpenGL 渲染选项，但这些选项与会话相关，不属于模型的一部分。<br>mjStatistic：该结构体包含由编译器计算的关于模型的统计数据：物体平均质量、模型的空间范围等。包含这些信息既是为了提供参考，也是因为可视化工具会使用它来进行自动缩放。<br>MuJoCo 可以从 OBJ 文件和二进制 STL 文件加载三角化网格。可以使用 MeshLab 等软件从其他格式进行转换。比如把CAD 模型（如 STEP 或 IGES 格式）通过MeshLab 等软件将这些 CAD 文件转换为 MuJoCo 支持的 OBJ 或 STL 格式，就可以得到和现实世界里的一模一样的模型<br>高度场可以从 PNG 文件（内部转换为灰度图）加载，出于渲染和碰撞检测的目的，网格矩形会自动进行三角剖分，几何体的碰撞只选取64个影响最大的接触点来计算。</p>
-<p>常见报错：<br>发散：当状态分量迅速趋向于无穷大时，就会发生仿真发散。在 MuJoCo 中，这通常表现为 <code>mjWARN_BADQACC</code> 警告。这是速度（大步长）与稳定性（小步长）之间BB博弈。</p>
-<p>单位未指定：MuJoCo 不指定基本的物理单位。用户可以根据自己的选择来理解单位制，只要保持一致即可。</p>
-<p>意外碰撞：为了防止两条胳膊被当成碰撞导致排斥力无穷大，mujoco规定：<br>	具有直接“父子关系”的两个刚体，哪怕几何体完全插在一起，也绝对不计算碰撞。<br>但是世界大地是所有物体的父物体，为了防止掉进虚空，加上：<br>	如果父物体是“静态的”（Static，比如大地，或者被焊死在大地上没有关节的物体），那么“父子互不伤害”规则失效<br>的补丁。<br>躯干（Base）和大地（worldbody）之间会有一个 <code>&lt;freejoint&gt;</code>，如果删除，躯干将解除父子互不伤害规则，会立刻报错解体</p>
-<p>mujoco的重要概念：物体、几何体、标记点<br>物体： 它是系统动力学计算的核心载体。它包含了这个零件的质量和惯性张量，在空间中是绝对隐形的，也不会和任何东西发生碰撞。<br>几何体：专门负责视觉渲染（外观）和碰撞检测（物理接触），在引擎底层（编译后的 <code>mjModel</code> 中），几何体本身是被剥夺了质量和惯性的，它只是一层壳。<br>标记点：有外观（能在屏幕上画出来），但既没有质量，也没有碰撞体积。专门用来在空间中精确标记一个位置。比如：你想在手指尖装一个触觉传感器、在头顶装一个 IMU（惯性导航）<br>在运动学树中，只有物体能作为节点（通过关节 Joint 与其他 Body 连接）。 几何体和标记点都被死死地“焊”在它们所属的父级物体上。当物体移动或旋转时，挂载在它身上的所有几何体和标记点都会跟着完全同步地移动。</p>
+<h2 id="每个模型都有三个选项可以修改"><a href="#每个模型都有三个选项可以修改" class="headerlink" title="每个模型都有三个选项可以修改"></a>每个模型都有三个选项可以修改</h2><p><strong>mjOption：</strong> 该结构体包含所有会影响物理仿真的选项。它用于选择算法并设置其参数、启用或禁用仿真流程中的不同部分，以及调整系统级别的物理属性（如重力）。<br><strong>mjVisual：</strong> 该结构体包含所有可视化选项。还有额外的 OpenGL 渲染选项，但这些选项与会话相关，不属于模型的一部分。<br><strong>mjStatistic：</strong> 该结构体包含由编译器计算的关于模型的统计数据：物体平均质量、模型的空间范围等。包含这些信息既是为了提供参考，也是因为可视化工具会使用它来进行自动缩放。<br>MuJoCo 可以从 OBJ 文件和二进制 STL 文件加载三角化网格。可以使用 MeshLab 等软件从其他格式进行转换。比如把CAD 模型（如 STEP 或 IGES 格式）通过MeshLab 等软件将这些 CAD 文件转换为 MuJoCo 支持的 OBJ 或 STL 格式，就可以得到和现实世界里的一模一样的模型<br>高度场可以从 PNG 文件（内部转换为灰度图）加载，出于渲染和碰撞检测的目的，网格矩形会自动进行三角剖分，几何体的碰撞只选取64个影响最大的接触点来计算。</p>
+<h2 id="常见报错"><a href="#常见报错" class="headerlink" title="常见报错"></a>常见报错</h2><p><strong>发散：</strong> 当状态分量迅速趋向于无穷大时，就会发生仿真发散。在 MuJoCo 中，这通常表现为 <code>mjWARN_BADQACC</code> 警告。这是速度（大步长）与稳定性（小步长）之间BB博弈。</p>
+<p><strong>单位未指定：</strong> MuJoCo 不指定基本的物理单位。用户可以根据自己的选择来理解单位制，只要保持一致即可。</p>
+<p><strong>意外碰撞：</strong> 为了防止两条胳膊被当成碰撞导致排斥力无穷大，mujoco规定：<br>具有直接“父子关系”的两个刚体，哪怕几何体完全插在一起，也绝对不计算碰撞。<br>但是世界大地是所有物体的父物体，为了防止掉进虚空，加上：<br>如果父物体是“静态的”（Static，比如大地，或者被焊死在大地上没有关节的物体），那么“父子互不伤害”规则失效<br>的补丁。<br>躯干（Base）和大地（worldbody）之间会有一个 <code>&lt;freejoint&gt;</code>，如果删除，躯干将解除父子互不伤害规则，会立刻报错解体</p>
+<p><strong>mujoco的重要概念：</strong> 物体、几何体、标记点<br><strong>物体：</strong> 它是系统动力学计算的核心载体。它包含了这个零件的质量和惯性张量，在空间中是绝对隐形的，也不会和任何东西发生碰撞。<br><strong>几何体：</strong> 专门负责视觉渲染（外观）和碰撞检测（物理接触），在引擎底层（编译后的 <code>mjModel</code> 中），几何体本身是被剥夺了质量和惯性的，它只是一层壳。<br><strong>标记点：</strong> 有外观（能在屏幕上画出来），但既没有质量，也没有碰撞体积。专门用来在空间中精确标记一个位置。比如：你想在手指尖装一个触觉传感器、在头顶装一个 IMU（惯性导航）<br>在运动学树中，只有物体能作为节点（通过关节 Joint 与其他 Body 连接）。 几何体和标记点都被死死地“焊”在它们所属的父级物体上。当物体移动或旋转时，挂载在它身上的所有几何体和标记点都会跟着完全同步地移动。</p>
 
       
 
@@ -273,7 +273,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E6%8B%9F%E6%95%B0%E6%8D%AE%E5%BD%A2%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">模拟数据形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AF%8F%E4%B8%AA%E6%A8%A1%E5%9E%8B%E9%83%BD%E6%9C%89%E4%B8%89%E4%B8%AA%E9%80%89%E9%A1%B9%E5%8F%AF%E4%BB%A5%E4%BF%AE%E6%94%B9"><span class="toc-number">2.</span> <span class="toc-text">每个模型都有三个选项可以修改</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E6%8A%A5%E9%94%99"><span class="toc-number">3.</span> <span class="toc-text">常见报错</span></a></li></ol>
                     </div>
                 </span>
             </div>

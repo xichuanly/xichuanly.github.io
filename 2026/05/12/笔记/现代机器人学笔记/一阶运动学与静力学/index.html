@@ -8,15 +8,15 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>一阶运动学与静力学 | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="一阶运动学的核心：	将关节速度转化为末端速度空间雅可比矩阵：	将关节速度映射到绝对空间下的末端速度。	空间坐标下的末端位姿有：$$T(\theta) &#x3D; e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M$$我们想得到运动旋量，应该会想到$$[\mathca">
+  <meta name="description" content="一阶运动学的核心将关节速度转化为末端速度 空间雅可比矩阵将关节速度映射到绝对空间下的末端速度。空间坐标下的末端位姿有：  T(\theta) &#x3D; e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M   我们想得到运动旋量，应该会想到  [\mathcal{V}_s]">
 <meta property="og:type" content="article">
 <meta property="og:title" content="一阶运动学与静力学">
 <meta property="og:url" content="https://xichuanly.github.io/2026/05/12/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E4%B8%8E%E9%9D%99%E5%8A%9B%E5%AD%A6/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="一阶运动学的核心：	将关节速度转化为末端速度空间雅可比矩阵：	将关节速度映射到绝对空间下的末端速度。	空间坐标下的末端位姿有：$$T(\theta) &#x3D; e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M$$我们想得到运动旋量，应该会想到$$[\mathca">
+<meta property="og:description" content="一阶运动学的核心将关节速度转化为末端速度 空间雅可比矩阵将关节速度映射到绝对空间下的末端速度。空间坐标下的末端位姿有：  T(\theta) &#x3D; e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M   我们想得到运动旋量，应该会想到  [\mathcal{V}_s]">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-12T11:33:01.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.900Z">
+<meta property="article:modified_time" content="2026-05-15T12:20:05.603Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="现代机器人学笔记">
 <meta property="article:tag" content="笔记">
@@ -167,10 +167,143 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>一阶运动学的核心：<br>	将关节速度转化为末端速度<br>空间雅可比矩阵：<br>	将关节速度映射到绝对空间下的末端速度。<br>	空间坐标下的末端位姿有：$$T(\theta) &#x3D; e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M$$我们想得到运动旋量，应该会想到$$[\mathcal{V}_s] &#x3D; \dot{T} T^{-1}$$所以我们来求导：由于归一化只有，角度$\theta$是和时间相关，而螺旋轴是与时间无关的，我们求导应当遵循$\frac{d}{dt}(e^{[\mathcal{S}_i]\theta_i}) &#x3D; [\mathcal{S}_i]\dot{\theta}_i e^{[\mathcal{S}_i]\theta_i}$的规则：$$\begin{aligned} \dot{T} &amp;&#x3D; \left( [\mathcal{S}_1]\dot{\theta}_1 e^{[\mathcal{S}_1]\theta_1} \right) e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M \ &amp;+ e^{[\mathcal{S}_1]\theta_1} \left( [\mathcal{S}_2]\dot{\theta}_2 e^{[\mathcal{S}_2]\theta_2} \right) \dots e^{[\mathcal{S}<em>n]\theta_n} M \ &amp;+ \dots \ &amp;+ e^{[\mathcal{S}<em>1]\theta_1} \dots e^{[\mathcal{S}</em>{n-1}]\theta</em>{n-1}} \left( [\mathcal{S}_n]\dot{\theta}_n e^{[\mathcal{S}_n]\theta_n} \right) M \end{aligned}$$另外，根据$(ABC)^{-1} &#x3D; C^{-1}B^{-1}A^{-1}$的性质，$T^{-1}$我们能写成：$$T^{-1} &#x3D; M^{-1} e^{-[\mathcal{S}<em>n]\theta_n} \dots e^{-[\mathcal{S}<em>1]\theta_1}$$带入后发现第$i$项能被化简成$$ e^{[\mathcal{S}<em>1]\theta_1} \dots e^{[\mathcal{S}</em>{i-1}]\theta</em>{i-1}} [\mathcal{S}<em>i] e^{-[\mathcal{S}</em>{i-1}]\theta</em>{i-1}} \dots e^{-[\mathcal{S}_1]\theta_1} \dot{\theta}_i $$而我们还知道伴随矩阵的公式$$T [\mathcal{V}] T^{-1} &#x3D; [Ad_T \mathcal{V}]$$所以最后的$[\mathcal{V}_s]$化成：$$[\mathcal{V}_s] &#x3D; [\mathcal{S}_1] \dot{\theta}<em>1 + [Ad</em>{e^{[\mathcal{S}<em>1]\theta_1}} \mathcal{S}<em>2] \dot{\theta}<em>2 + \dots + [Ad</em>{e^{[\mathcal{S}<em>1]\theta_1} \dots e^{[\mathcal{S}</em>{n-1}]\theta</em>{n-1}}} \mathcal{S}<em>n] \dot{\theta}<em>n$$提取出$\theta$，就有：$$\mathcal{V}<em>s &#x3D; \underbrace{\begin{bmatrix} J</em>{s1} &amp; J</em>{s2} &amp; \dots &amp; J</em>{sn} \end{bmatrix}}</em>{J_s(\theta)} \begin{bmatrix} \dot{\theta}<em>1 \ \dot{\theta}<em>2 \ \vdots \ \dot{\theta}<em>n \end{bmatrix}$$其中$$J</em>{si}(\theta) &#x3D; Ad</em>{e^{[\mathcal{S}<em>1]\theta_1} \dots e^{[\mathcal{S}</em>{i-1}]\theta</em>{i-1}}}(\mathcal{S}_i)$$我们把${J_s(\theta)}$称为雅可比空间矩阵（6 x n），其实也就是每一个关节对末端的贡献率有多大。</p>
-<p>本体雅可比矩阵：<br>	有了本体PoE的基础，我们有：$$T(\theta) &#x3D; M e^{[\mathcal{B}<em>1]\theta_1} e^{[\mathcal{B}<em>2]\theta_2} \dots e^{[\mathcal{B}<em>n]\theta_n}$$按照一样的逻辑，我们能获得：$$\mathcal{V}<em>b &#x3D; \underbrace{\begin{bmatrix} J</em>{b1} &amp; J</em>{b2} &amp; \dots &amp; J</em>{bn} \end{bmatrix}}</em>{J_b(\theta)} \begin{bmatrix} \dot{\theta}<em>1 \ \dot{\theta}<em>2 \ \vdots \ \dot{\theta}<em>n \end{bmatrix}$$其中，本体雅可比的第 $i$ 列公式正式得出：<br>$$J</em>{bi}(\theta) &#x3D; Ad</em>{e^{-[\mathcal{B}<em>n]\theta_n} \dots e^{-[\mathcal{B}</em>{i+1}]\theta</em>{i+1}}}(\mathcal{B}_i)$$<br>静力学的核心：<br>	处理末端的力怎么分配到每一个关节的扭矩上</p>
-<p>力旋量：<br>	在运动学中，我们用运动旋量统一了旋转和平移，在力学中，我们也可以通过相同的思路统一力矩和力，参考运动旋量的格式，我们有：$$\mathcal{F} &#x3D; \begin{bmatrix} m \ f \end{bmatrix} \in \mathbb{R}^6$$注意：这里的 $f$ 和 $m$ 都是相对于参考坐标系原点而言的。如果一个力作用在机械臂末端的某个非原点位置，它除了产生线形力 $f$，还会对坐标系原点产生一个附加的力矩 $m &#x3D; r \times f$<br>	现在，我们来考虑怎么将末端的$\mathcal{F}$ 映射到关节的扭矩上去。<br>	首先，从能量守恒出发，末端做功一定会等于各个电机的功率和（这里是理想情况，不考虑重力和摩擦力，这些力可以通过补偿项计算），电机输出扭矩为$\tau$ ，那么电机功率就等于：$$P_{in} &#x3D; \tau^T \dot{\theta}$$机器人末端做功等于$$P_{out} &#x3D; \mathcal{F}^T \mathcal{V}$$由于两者相等，我们有$$\tau^T \dot{\theta} &#x3D; \mathcal{F}^T \mathcal{V}$$前面的运动学得到$$\mathcal{V} &#x3D; J(\theta)\dot{\theta}$$的关系，我们带入原式，就有$$\tau &#x3D; J^T(\theta) \mathcal{F}$$（注意：雅可比矩阵必须和力旋量在同一参考系下）<br>	可以发现，$\tau$ 是一个（n x 1）的向量，能反映每一个关节应该出多少力。<br>	现在回到力旋量上来，我们知道本体和空间的力旋量需要有一个转换的桥梁，在速度旋量中是伴随矩阵，力旋量是什么？依旧从能量守恒出发：$$P &#x3D; \mathcal{V}_s^T \mathcal{F}_s &#x3D; \mathcal{V}_b^T \mathcal{F}<em>b$$将 $\mathcal{V}<em>s &#x3D; [Ad</em>{T</em>{sb}}] \mathcal{V}<em>b$ 代入功率等式，可以推导出力旋量的变换法则为：<br>	$$\mathcal{F}<em>b &#x3D; [Ad</em>{T</em>{sb}}]^T \mathcal{F}_s$$(注意，将空间力旋量转化为本体力旋量的是b-s伴随矩阵的转置)</p>
-<p>雅可比矩阵的一些性质：<br>	奇异位形（奇异点）:当雅可比矩阵的秩&lt;机器人关节数之后会发生机器人无法到指定任务空间的情况。要分析这些奇异点，我们可以这样拆解：<br>	首先求解各个关节角速度我们通过求解雅可比矩阵的伪逆得到：$$\dot{\theta} &#x3D; J^+ \mathcal{V}$$对雅可比矩阵 $J$ 进行奇异值分解：$$J &#x3D; U \Sigma V^T$$其中：<br>	$U \in \mathbb{R}^{m \times m}$ 是正交矩阵，其列向量 $u_i$ 代表<strong>任务空间</strong>的一组正交基（速度椭球的主轴方向）。<br>	$V \in \mathbb{R}^{n \times n}$ 是正交矩阵，其列向量 $v_i$ 代表<strong>关节空间</strong>的一组正交基。<br>	$\Sigma \in \mathbb{R}^{m \times n}$ 是对角矩阵，对角线上的元素 $\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_m \ge 0$ 即为<strong>奇异值</strong>（代表在对应方向上的拉伸能力）。<br>	也就有：$$J^+ &#x3D; V \Sigma^+ U^T$$$$\dot{\theta} &#x3D; (V \Sigma^+ U^T) \mathcal{V}$$对等式两边取范数（正交矩阵 $V$ 保范数（$|Vx| &#x3D; |x|$））：$$|\dot{\theta}| &#x3D; |V(\Sigma^+ U^T\mathcal{V})| &#x3D; |\Sigma^+ U^T\mathcal{V}|$$我们不妨把运动旋量投影到任务空间：$\tilde{\mathcal{V}} &#x3D; U^T\mathcal{V}$，设其分量为 $\tilde{\mathcal{V}} &#x3D; [\tilde{v}_1, \tilde{v}<em>2, \dots, \tilde{v}<em>m]^T$两边平方后展开$$|\dot{\theta}|^2 &#x3D; \left(\frac{\tilde{v}<em>1}{\sigma_1}\right)^2 + \dots + \left(\frac{\tilde{v}</em>{m-1}}{\sigma</em>{m-1}}\right)^2 + \left(\frac{\tilde{v}<em>m}{\sigma_m}\right)^2$$当$\sigma_i$靠近0的时候，速度将会趋于无穷大，这就是奇异点。<br>	奇异点的数量：任务空间有m个自由度，机器人有n个关节，奇异值就有min{m , n}个。奇异值数量等于6，称之为冗余&#x2F;标准机械臂；奇异值数量小于6，称之为欠驱动机械臂。<br>	实践中，我们算当前雅可比矩阵的奇异值矩阵，利用：$\kappa &#x3D; \frac{\sigma</em>{max}}{\sigma</em>{min}}$计算条件数，如果条件数大于100，我们应当改变当前姿态，防止奇异。</p>
+        <h2 id="一阶运动学的核心"><a href="#一阶运动学的核心" class="headerlink" title="一阶运动学的核心"></a>一阶运动学的核心</h2><p>将关节速度转化为末端速度</p>
+<h2 id="空间雅可比矩阵"><a href="#空间雅可比矩阵" class="headerlink" title="空间雅可比矩阵"></a>空间雅可比矩阵</h2><p>将关节速度映射到绝对空间下的末端速度。<br><strong>空间坐标下的末端位姿有：</strong></p>
+<script type="math/tex; mode=display">
+T(\theta) = e^{[\mathcal{S}_1]\theta_1} e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M
+</script>
+
+<p>我们想得到运动旋量，应该会想到</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = \dot{T} T^{-1}
+</script>
+
+<p>所以我们来求导：由于归一化只有，角度<script type="math/tex">\theta</script>是和时间相关，而螺旋轴是与时间无关的，我们求导应当遵循<script type="math/tex">\frac{d}{dt}(e^{[\mathcal{S}_i]\theta_i}) = [\mathcal{S}_i]\dot{\theta}_i e^{[\mathcal{S}_i]\theta_i}</script>的规则：</p>
+<script type="math/tex; mode=display">
+\begin{aligned} \dot{T} &= \left( [\mathcal{S}_1]\dot{\theta}_1 e^{[\mathcal{S}_1]\theta_1} \right) e^{[\mathcal{S}_2]\theta_2} \dots e^{[\mathcal{S}_n]\theta_n} M \\ &+ e^{[\mathcal{S}_1]\theta_1} \left( [\mathcal{S}_2]\dot{\theta}_2 e^{[\mathcal{S}_2]\theta_2} \right) \dots e^{[\mathcal{S}_n]\theta_n} M \\ &+ \dots \\ &+ e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{n-1}]\theta_{n-1}} \left( [\mathcal{S}_n]\dot{\theta}_n e^{[\mathcal{S}_n]\theta_n} \right) M \end{aligned}
+</script>
+
+<p>另外，根据<script type="math/tex">(ABC)^{-1} = C^{-1}B^{-1}A^{-1}</script>的性质，<script type="math/tex">T^{-1}</script>我们能写成：</p>
+<script type="math/tex; mode=display">
+T^{-1} = M^{-1} e^{-[\mathcal{S}_n]\theta_n} \dots e^{-[\mathcal{S}_1]\theta_1}
+</script>
+
+<p>带入后发现第<script type="math/tex">i</script>项能被化简成</p>
+<script type="math/tex; mode=display">
+e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{i-1}]\theta_{i-1}} [\mathcal{S}_i] e^{-[\mathcal{S}_{i-1}]\theta_{i-1}} \dots e^{-[\mathcal{S}_1]\theta_1} \dot{\theta}_i
+</script>
+
+<p>而我们还知道伴随矩阵的公式</p>
+<script type="math/tex; mode=display">
+T [\mathcal{V}] T^{-1} = [Ad_T \mathcal{V}]
+</script>
+
+<p>所以最后的<script type="math/tex">[\mathcal{V}_s]</script>化成：</p>
+<script type="math/tex; mode=display">
+[\mathcal{V}_s] = [\mathcal{S}_1] \dot{\theta}_1 + [Ad_{e^{[\mathcal{S}_1]\theta_1}} \mathcal{S}_2] \dot{\theta}_2 + \dots + [Ad_{e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{n-1}]\theta_{n-1}}} \mathcal{S}_n] \dot{\theta}_n
+</script>
+
+<p>提取出<script type="math/tex">\theta</script>，就有：</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_s = \underbrace{\begin{bmatrix} J_{s1} & J_{s2} & \dots & J_{sn} \end{bmatrix}}_{J_s(\theta)} \begin{bmatrix} \dot{\theta}_1 \\ \dot{\theta}_2 \\ \vdots \\ \dot{\theta}_n \end{bmatrix}
+</script>
+
+<p>其中</p>
+<script type="math/tex; mode=display">
+J_{si}(\theta) = Ad_{e^{[\mathcal{S}_1]\theta_1} \dots e^{[\mathcal{S}_{i-1}]\theta_{i-1}}}(\mathcal{S}_i)
+</script>
+
+<p>我们把<script type="math/tex">{J_s(\theta)}</script>称为雅可比空间矩阵（6 x n），其实也就是每一个关节对末端的贡献率有多大。</p>
+<h2 id="本体雅可比矩阵"><a href="#本体雅可比矩阵" class="headerlink" title="本体雅可比矩阵"></a>本体雅可比矩阵</h2><p>有了本体PoE的基础，我们有：</p>
+<script type="math/tex; mode=display">
+T(\theta) = M e^{[\mathcal{B}_1]\theta_1} e^{[\mathcal{B}_2]\theta_2} \dots e^{[\mathcal{B}_n]\theta_n}
+</script>
+
+<p>按照一样的逻辑，我们能获得：</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_b = \underbrace{\begin{bmatrix} J_{b1} & J_{b2} & \dots & J_{bn} \end{bmatrix}}_{J_b(\theta)} \begin{bmatrix} \dot{\theta}_1 \\ \dot{\theta}_2 \\ \vdots \\ \dot{\theta}_n \end{bmatrix}
+</script>
+
+<p>其中，本体雅可比的第 <script type="math/tex">i</script> 列公式正式得出：</p>
+<script type="math/tex; mode=display">
+J_{bi}(\theta) = Ad_{e^{-[\mathcal{B}_n]\theta_n} \dots e^{-[\mathcal{B}_{i+1}]\theta_{i+1}}}(\mathcal{B}_i)
+</script>
+<h2 id="静力学的核心"><a href="#静力学的核心" class="headerlink" title="静力学的核心"></a>静力学的核心</h2><p>处理末端的力怎么分配到每一个关节的扭矩上</p>
+<h2 id="力旋量"><a href="#力旋量" class="headerlink" title="力旋量"></a>力旋量</h2><p>在运动学中，我们用运动旋量统一了旋转和平移，在力学中，我们也可以通过相同的思路统一力矩和力，参考运动旋量的格式，我们有：</p>
+<script type="math/tex; mode=display">
+\mathcal{F} = \begin{bmatrix} m \\ f \end{bmatrix} \in \mathbb{R}^6
+</script>
+
+<p>注意：这里的 <script type="math/tex">f</script> 和 <script type="math/tex">m</script> 都是相对于参考坐标系原点而言的。如果一个力作用在机械臂末端的某个非原点位置，它除了产生线形力 <script type="math/tex">f</script>，还会对坐标系原点产生一个附加的力矩 <script type="math/tex">m = r \times f</script><br>现在，我们来考虑怎么将末端的<script type="math/tex">\mathcal{F}</script> 映射到关节的扭矩上去。<br>首先，从能量守恒出发，末端做功一定会等于各个电机的功率和（这里是理想情况，不考虑重力和摩擦力，这些力可以通过补偿项计算），电机输出扭矩为<script type="math/tex">\tau</script> ，那么电机功率就等于：</p>
+<script type="math/tex; mode=display">
+P_{in} = \tau^T \dot{\theta}
+</script>
+
+<p>机器人末端做功等于</p>
+<script type="math/tex; mode=display">
+P_{out} = \mathcal{F}^T \mathcal{V}
+</script>
+
+<p>由于两者相等，我们有</p>
+<script type="math/tex; mode=display">
+\tau^T \dot{\theta} = \mathcal{F}^T \mathcal{V}
+</script>
+
+<p>前面的运动学得到</p>
+<script type="math/tex; mode=display">
+\mathcal{V} = J(\theta)\dot{\theta}
+</script>
+
+<p>的关系，我们带入原式，就有</p>
+<script type="math/tex; mode=display">
+\tau = J^T(\theta) \mathcal{F}
+</script>
+
+<p>（注意：雅可比矩阵必须和力旋量在同一参考系下）<br>可以发现，<script type="math/tex">\tau</script> 是一个（n x 1）的向量，能反映每一个关节应该出多少力。<br>现在回到力旋量上来，我们知道本体和空间的力旋量需要有一个转换的桥梁，在速度旋量中是伴随矩阵，力旋量是什么？依旧从能量守恒出发：</p>
+<script type="math/tex; mode=display">
+P = \mathcal{V}_s^T \mathcal{F}_s = \mathcal{V}_b^T \mathcal{F}_b
+</script>
+
+<p>将 <script type="math/tex">\mathcal{V}_s = [Ad_{T_{sb}}] \mathcal{V}_b</script> 代入功率等式，可以推导出力旋量的变换法则为：</p>
+<script type="math/tex; mode=display">
+\mathcal{F}_b = [Ad_{T_{sb}}]^T \mathcal{F}_s
+</script>
+
+<p>(注意，将空间力旋量转化为本体力旋量的是b-s伴随矩阵的转置)</p>
+<h2 id="雅可比矩阵的一些性质"><a href="#雅可比矩阵的一些性质" class="headerlink" title="雅可比矩阵的一些性质"></a>雅可比矩阵的一些性质</h2><p><strong>奇异位形（奇异点）：</strong> 当雅可比矩阵的秩&lt;机器人关节数之后会发生机器人无法到指定任务空间的情况。要分析这些奇异点，我们可以这样拆解：<br>首先求解各个关节角速度我们通过求解雅可比矩阵的伪逆得到：</p>
+<script type="math/tex; mode=display">
+\dot{\theta} = J^+ \mathcal{V}
+</script>
+
+<p>对雅可比矩阵 <script type="math/tex">J</script> 进行奇异值分解：</p>
+<script type="math/tex; mode=display">
+J = U \Sigma V^T
+</script>
+
+<p>其中：</p>
+<script type="math/tex">U \in \mathbb{R}^{m \times m}</script> 是正交矩阵，其列向量 <script type="math/tex">u\_i</script> 代表**任务空间**的一组正交基（速度椭球的主轴方向）。
+<script type="math/tex">V \in \mathbb{R}^{n \times n}</script> 是正交矩阵，其列向量 <script type="math/tex">v\_i</script> 代表**关节空间**的一组正交基。
+<script type="math/tex">\Sigma \in \mathbb{R}^{m \times n}</script> 是对角矩阵，对角线上的元素 <script type="math/tex">\sigma\_1 \ge \sigma\_2 \ge \dots \ge \sigma\_m \ge 0</script> 即为**奇异值**（代表在对应方向上的拉伸能力）。
+<p><strong>也就有：</strong></p>
+<script type="math/tex; mode=display">
+J^+ = V \Sigma^+ U^T
+</script>
+
+<script type="math/tex; mode=display">
+\dot{\theta} = (V \Sigma^+ U^T) \mathcal{V}
+</script>
+
+<p>对等式两边取范数（正交矩阵 <script type="math/tex">V</script> 保范数（<script type="math/tex">|Vx| = |x|</script>））：</p>
+<script type="math/tex; mode=display">
+\|\dot{\theta}\| = \|V(\Sigma^+ U^T\mathcal{V})\| = \|\Sigma^+ U^T\mathcal{V}\|
+</script>
+
+<p>我们不妨把运动旋量投影到任务空间：<script type="math/tex">\tilde{\mathcal{V}} = U^T\mathcal{V}</script>，设其分量为 <script type="math/tex">\tilde{\mathcal{V}} = [\tilde{v}_1, \tilde{v}_2, \dots, \tilde{v}_m]^T</script>两边平方后展开</p>
+<script type="math/tex; mode=display">
+\|\dot{\theta}\|^2 = \left(\frac{\tilde{v}_1}{\sigma_1}\right)^2 + \dots + \left(\frac{\tilde{v}_{m-1}}{\sigma_{m-1}}\right)^2 + \left(\frac{\tilde{v}_m}{\sigma_m}\right)^2
+</script>
+
+<p>当<script type="math/tex">\sigma_i</script>靠近0的时候，速度将会趋于无穷大，这就是奇异点。<br><strong>奇异点的数量：</strong> 任务空间有m个自由度，机器人有n个关节，奇异值就有min{m , n}个。奇异值数量等于6，称之为冗余&#x2F;标准机械臂；奇异值数量小于6，称之为欠驱动机械臂。<br>实践中，我们算当前雅可比矩阵的奇异值矩阵，利用：<script type="math/tex">\kappa = \frac{\sigma_{max}}{\sigma_{min}}</script>计算条件数，如果条件数大于100，我们应当改变当前姿态，防止奇异。</p>
 
       
 
@@ -264,7 +397,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E9%98%B6%E8%BF%90%E5%8A%A8%E5%AD%A6%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="toc-number">1.</span> <span class="toc-text">一阶运动学的核心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A9%BA%E9%97%B4%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5"><span class="toc-number">2.</span> <span class="toc-text">空间雅可比矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E4%BD%93%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5"><span class="toc-number">3.</span> <span class="toc-text">本体雅可比矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9D%99%E5%8A%9B%E5%AD%A6%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="toc-number">4.</span> <span class="toc-text">静力学的核心</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%9B%E6%97%8B%E9%87%8F"><span class="toc-number">5.</span> <span class="toc-text">力旋量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%A7%E8%B4%A8"><span class="toc-number">6.</span> <span class="toc-text">雅可比矩阵的一些性质</span></a></li></ol>
                     </div>
                 </span>
             </div>

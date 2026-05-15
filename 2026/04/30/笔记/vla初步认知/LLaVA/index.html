@@ -8,16 +8,16 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>LLaVA | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="LLaVA核心思路：	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text">
+  <meta name="description" content="LLaVA核心思路由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text t">
 <meta property="og:type" content="article">
 <meta property="og:title" content="LLaVA">
 <meta property="og:url" content="https://xichuanly.github.io/2026/04/30/%E7%AC%94%E8%AE%B0/vla%E5%88%9D%E6%AD%A5%E8%AE%A4%E7%9F%A5/LLaVA/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="LLaVA核心思路：	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text">
+<meta property="og:description" content="LLaVA核心思路由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text t">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://xichuanly.github.io/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
 <meta property="article:published_time" content="2026-04-29T16:49:29.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.898Z">
+<meta property="article:modified_time" content="2026-05-15T12:12:57.539Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="vla初步认知">
 <meta property="article:tag" content="笔记">
@@ -169,7 +169,13 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>LLaVA核心思路：<br>	由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text token拼接之后直接作为llm的输入（类似把image token作为一种“外语”去学习），所得到的是文字token.<br>	训练过程分成两步：<br>	1.特征对齐：目的是保证视觉编码器的信息被充分翻译到词向量空间中<br>	此时，完全冻结LLM参数和ViT参数，使用大量的文本对来训练Projection层的参数。<br>	2.端到端视觉微调：目的是让模型在看懂图片的基础上去执行人类的指令<br>	此时，仍然冻结ViT参数，但是解锁LLM参数和投影层参数，数据是问答形式，例如如果把石头推下去会怎么样。通过这种数据对来提升模型的推理能力。<br><img src="/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="LLaVA流程图"><br>Cross-Modal Fusion：<br>	LLaVA采用的多模态融合采用直接拼接的方式。假设用户输入是<br>	USER: $<image>$\n这是什么？ASSISTANT:（$<image>$、USER:、ASSISTANT:是预设的占位符），之后让让image token按照固定的顺序替换<image>就可以输入进模型了<br>CLIP与LLaVA的能力差异：<br>	CLIP输入：训练：图文对；推理：零样本分类（（比如 <code>[&quot;一只猫&quot;, &quot;一只狗&quot;, &quot;一辆车&quot;]</code>）。<br>	输出：图文的匹配程度（余弦相似度矩阵（分数））。<br>	能力：分辨图片里的东西是什么比如是猫还是狗，但是不能理解图片里有什么，只能分辨和描述文本有多匹配。<br>	LLaVA输入：训练：阶段一：图片 + 极其简单的描述文本；阶段二：图片 + 复杂的用户指令（Prompt） + 标准的期望回答。<br>	输出：纯粹的文本token序列。<br>	能力：通过图文交互的自注意力机制，通过学习能理解图片中的东西是什么，能进一步推理图片的内容，泛化能力强。</p>
+        <h2 id="LLaVA核心思路"><a href="#LLaVA核心思路" class="headerlink" title="LLaVA核心思路"></a>LLaVA核心思路</h2><p>由于CLIP模型训练时只关注图文对的匹配程度，缺乏上下文学习能力。LLaVA将CLIP训练好的Vision encoder直接调用，一个图片的视觉特征的image token经过一个projection层（可学习矩阵W或者一个简单的MLP)，将imagetoken投影到与词向量同维度的多模态空间中。之后就是与CLIP不同的技术路线，LLaVA把image token和text token拼接之后直接作为llm的输入（类似把image token作为一种“外语”去学习），所得到的是文字token.</p>
+<h2 id="训练过程分成两步"><a href="#训练过程分成两步" class="headerlink" title="训练过程分成两步"></a>训练过程分成两步</h2><ol>
+<li><strong>特征对齐：</strong> 目的是保证视觉编码器的信息被充分翻译到词向量空间中<br>此时，完全冻结LLM参数和ViT参数，使用大量的文本对来训练Projection层的参数。</li>
+<li><strong>端到端视觉微调：</strong> 目的是让模型在看懂图片的基础上去执行人类的指令<br>此时，仍然冻结ViT参数，但是解锁LLM参数和投影层参数，数据是问答形式，例如如果把石头推下去会怎么样。通过这种数据对来提升模型的推理能力。<br><img src="/img/notes/LLaVA%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="LLaVA流程图"></li>
+</ol>
+<h2 id="Cross-Modal-Fusion"><a href="#Cross-Modal-Fusion" class="headerlink" title="Cross-Modal Fusion"></a>Cross-Modal Fusion</h2><p>LLaVA采用的多模态融合采用直接拼接的方式。假设用户输入是<br><strong>USER：</strong> <code>&lt;image&gt;</code>\n这是什么？ASSISTANT:（<code>&lt;image&gt;</code>、USER:、ASSISTANT:是预设的占位符），之后让让image token按照固定的顺序替换<code>&lt;image&gt;</code>就可以输入进模型了</p>
+<h2 id="CLIP与LLaVA的能力差异"><a href="#CLIP与LLaVA的能力差异" class="headerlink" title="CLIP与LLaVA的能力差异"></a>CLIP与LLaVA的能力差异</h2><p><strong>CLIP输入：</strong> 训练：图文对；推理：零样本分类（（比如 <code>[&quot;一只猫&quot;, &quot;一只狗&quot;, &quot;一辆车&quot;]</code>）。<br><strong>输出：</strong> 图文的匹配程度（余弦相似度矩阵（分数））。<br><strong>能力：</strong> 分辨图片里的东西是什么比如是猫还是狗，但是不能理解图片里有什么，只能分辨和描述文本有多匹配。<br><strong>LLaVA输入：</strong> 训练：阶段一：图片 + 极其简单的描述文本；阶段二：图片 + 复杂的用户指令（Prompt） + 标准的期望回答。<br><strong>输出：</strong> 纯粹的文本token序列。<br><strong>能力：</strong> 通过图文交互的自注意力机制，通过学习能理解图片中的东西是什么，能进一步推理图片的内容，泛化能力强。</p>
 
       
 
@@ -263,7 +269,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#LLaVA%E6%A0%B8%E5%BF%83%E6%80%9D%E8%B7%AF"><span class="toc-number">1.</span> <span class="toc-text">LLaVA核心思路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%AD%E7%BB%83%E8%BF%87%E7%A8%8B%E5%88%86%E6%88%90%E4%B8%A4%E6%AD%A5"><span class="toc-number">2.</span> <span class="toc-text">训练过程分成两步</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Cross-Modal-Fusion"><span class="toc-number">3.</span> <span class="toc-text">Cross-Modal Fusion</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CLIP%E4%B8%8ELLaVA%E7%9A%84%E8%83%BD%E5%8A%9B%E5%B7%AE%E5%BC%82"><span class="toc-number">4.</span> <span class="toc-text">CLIP与LLaVA的能力差异</span></a></li></ol>
                     </div>
                 </span>
             </div>

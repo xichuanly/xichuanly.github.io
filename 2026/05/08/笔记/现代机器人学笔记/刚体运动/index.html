@@ -8,15 +8,15 @@
   <link rel="dns-prefetch" href="https://xichuanly.github.io">
   <title>刚体运动 | 西川の小屋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="旋转矩阵：	用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达	左乘旋转：通常表示绕空间&#x2F;固定坐标系轴旋转。	右乘旋转：通常表示绕物体&#x2F;当前坐标系轴旋转。	$R_{sb}$为从s转变成b的旋转矩阵，逆矩阵也就是$R_{sb}^{-1} &#x3D; R_{bs}$ ,起到相反的作用  Adjoint 变换：	$$[\text{">
+  <meta name="description" content="旋转矩阵用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达左乘旋转： 通常表示绕空间&#x2F;固定坐标系轴旋转。右乘旋转： 通常表示绕物体&#x2F;当前坐标系轴旋转。 R\_{sb}为从s转变成b的旋转矩阵，逆矩阵也就是R\_{sb}^{-1} &#x3D; R\_{bs} ,起到相反的作用  Adjoint 变换 [\text{Ad}_{T_{AB}">
 <meta property="og:type" content="article">
 <meta property="og:title" content="刚体运动">
 <meta property="og:url" content="https://xichuanly.github.io/2026/05/08/%E7%AC%94%E8%AE%B0/%E7%8E%B0%E4%BB%A3%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%AD%A6%E7%AC%94%E8%AE%B0/%E5%88%9A%E4%BD%93%E8%BF%90%E5%8A%A8/index.html">
 <meta property="og:site_name" content="西川の小屋">
-<meta property="og:description" content="旋转矩阵：	用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达	左乘旋转：通常表示绕空间&#x2F;固定坐标系轴旋转。	右乘旋转：通常表示绕物体&#x2F;当前坐标系轴旋转。	$R_{sb}$为从s转变成b的旋转矩阵，逆矩阵也就是$R_{sb}^{-1} &#x3D; R_{bs}$ ,起到相反的作用  Adjoint 变换：	$$[\text{">
+<meta property="og:description" content="旋转矩阵用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达左乘旋转： 通常表示绕空间&#x2F;固定坐标系轴旋转。右乘旋转： 通常表示绕物体&#x2F;当前坐标系轴旋转。 R\_{sb}为从s转变成b的旋转矩阵，逆矩阵也就是R\_{sb}^{-1} &#x3D; R\_{bs} ,起到相反的作用  Adjoint 变换 [\text{Ad}_{T_{AB}">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-05-08T07:14:18.000Z">
-<meta property="article:modified_time" content="2026-05-15T07:56:00.902Z">
+<meta property="article:modified_time" content="2026-05-15T12:20:05.604Z">
 <meta property="article:author" content="xichuanly">
 <meta property="article:tag" content="现代机器人学笔记">
 <meta property="article:tag" content="笔记">
@@ -167,20 +167,82 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>旋转矩阵：<br>	用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达<br>	左乘旋转：通常表示绕空间&#x2F;固定坐标系轴旋转。<br>	右乘旋转：通常表示绕物体&#x2F;当前坐标系轴旋转。<br>	$R_{sb}$为从s转变成b的旋转矩阵，逆矩阵也就是$R_{sb}^{-1} &#x3D; R_{bs}$ ,起到相反的作用 </p>
-<p>Adjoint 变换：<br>	$$[\text{Ad}<em>{T</em>{AB}}] &#x3D; \begin{bmatrix} R &amp; 0 \ \hat{p}R &amp; R \end{bmatrix}$$<br>	其中$\hat{p}$ 是平移向量 $p$ 的反对称矩阵，作用是直接转换不同参考系下物体的速度$$\mathcal{V}<em>A &#x3D; [\text{Ad}</em>{T_{AB}}] \mathcal{V}<em>B$$<br>	<br>	<br>反对称矩阵：<br>	对于需要叉乘的对象w X θ， 可以转化成矩阵乘法，构件$\omega &#x3D; \begin{bmatrix} \omega_x \ \omega_y \ \omega_z \end{bmatrix}$的反对称矩阵$$[\omega] &#x3D; \begin{bmatrix} 0 &amp; -\omega_z &amp; \omega_y \ \omega_z &amp; 0 &amp; -\omega_x \ -\omega_y &amp; \omega_x &amp; 0 \end{bmatrix}$$<br>	即可。反对称矩阵有一个重要性质$A^T &#x3D; -A$<br>	<br>速度矩阵：<br>	$$\hat{\mathcal{V}} &#x3D; \begin{bmatrix} \hat{\omega} &amp; v \ 0 &amp; 0 \end{bmatrix}$$<br>	其中$\hat{\omega}$ 是反对称矩阵，这个矩阵的作用是，左乘刚体上一个齐次坐标 $P &#x3D; [x, y, z, 1]^T$ 时，可以得到该点在空间中的瞬时线速度：$\dot{P} &#x3D; \hat{\mathcal{V}} P &#x3D; \hat{\omega}p + v$<br>	<br>位姿矩阵：<br>	一个4 x 4矩阵，包含旋转信息和平移信息。通常长成这个样子$$T &#x3D; \begin{bmatrix} R &amp; p \ 0 &amp; 1 \end{bmatrix} &#x3D; \begin{bmatrix} r</em>{11} &amp; r_{12} &amp; r_{13} &amp; p_x \ r_{21} &amp; r_{22} &amp; r_{23} &amp; p_y \ r_{31} &amp; r_{32} &amp; r_{33} &amp; p_z \ 0 &amp; 0 &amp; 0 &amp; 1 \end{bmatrix}$$<br>运动旋量(Twist)：<br>	一个6维向量，包含角速度和线速度，长这样<br>	$$\mathcal{V}_b &#x3D; \begin{bmatrix} \omega_b \ v_b \end{bmatrix} &#x3D; \begin{bmatrix} \omega_x \ \omega_y \ \omega_z \ v_x \ v_y \ v_z \end{bmatrix} \in \mathbb{R}^6$$<br>力旋量(Wrench)：<br>	一个6维向量，包含力矩和力，长这样<br>	$$\mathcal{F} &#x3D; \begin{bmatrix} m \ f \end{bmatrix} &#x3D; \begin{bmatrix} m_x \ m_y \ m_z \ f_x \ f_y \ f_z \end{bmatrix} \in \mathbb{R}^6$$<br>罗德里格斯公式：<br>	$$e^{[\hat{\omega}]\theta} &#x3D; I + \sin\theta [\hat{\omega}] + (1 - \cos\theta) [\hat{\omega}]^2$$<br>	其中$\hat{\omega}$ 是与旋转轴同向的单位向量；θ是转的角度。出来是一个方阵，描述了旋转的程度大小。<br>	证明：将$e^{[\hat{\omega}]\theta}$ 泰勒展开成$$e^{[\hat{\omega}]\theta} &#x3D; I + ([\hat{\omega}]\theta) + \frac{([\hat{\omega}]\theta)^2}{2!} + \frac{([\hat{\omega}]\theta)^3}{3!} + \frac{([\hat{\omega}]\theta)^4}{4!} + \dots$$<br>	通过$[\hat{\omega}]^{k+2} &#x3D; -[\hat{\omega}]^k$ 规律化简，按照奇偶打包$$e^{[\hat{\omega}]\theta} &#x3D; I + \left( \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \dots \right) [\hat{\omega}] + \left( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \dots \right) [\hat{\omega}]^2$$<br>	总结成$$e^{[\hat{\omega}]\theta} &#x3D; I + \sin\theta [\hat{\omega}] + (1 - \cos\theta) [\hat{\omega}]^2$$</p>
-<p>Chasles-Mozzi定理：<br>	任何刚体在三维空间中的一般位移（或瞬时运动），都可以等效为绕着空间中某一条特定直线的旋转，以及沿着该直线的平移的组合。
-	</p>
-<p>欧拉角表示姿态：<br>	欧拉角表示是按照本体建立坐标系。pitch俯仰角（y轴）、yaw航向角（z轴）与roll翻滚角（x轴）组成。由于不统一的命名规则和本征与绝对的纠缠，本文统一用p、y、r与本征表示。<br>	roll轴旋转矩阵：<br>	$$ R_{roll}(\alpha) &#x3D; \begin{bmatrix} 1 &amp; 0 &amp; 0 \ 0 &amp; \cos\alpha &amp; -\sin\alpha \ 0 &amp; \sin\alpha &amp; \cos\alpha \end{bmatrix} $$<br>	pitch轴旋转矩阵：<br>	$$ R_{pitch}(\beta) &#x3D; \begin{bmatrix} \cos\beta &amp; 0 &amp; \sin\beta \ 0 &amp; 1 &amp; 0 \ -\sin\beta &amp; 0 &amp; \cos\beta \end{bmatrix} $$<br>	yaw轴旋转矩阵：<br>	$$ R_{yaw}(\gamma) &#x3D; \begin{bmatrix} \cos\gamma &amp; -\sin\gamma &amp; 0 \ \sin\gamma &amp; \cos\gamma &amp; 0 \ 0 &amp; 0 &amp; 1 \end{bmatrix} $$<br>	现在证明两点：旋转结果与顺序有关、万向锁<br>	顺序相关：</p>
-<pre><code>$$ R_{roll} \cdot R_{pitch} = \begin{bmatrix} 1 &amp; 0 &amp; 0 \\ 0 &amp; \cos\alpha &amp; -\sin\alpha \\ 0 &amp; \sin\alpha &amp; \cos\alpha \end{bmatrix} \begin{bmatrix} \cos\beta &amp; 0 &amp; \sin\beta \\ 0 &amp; 1 &amp; 0 \\ -\sin\beta &amp; 0 &amp; \cos\beta \end{bmatrix} = \begin{bmatrix} \cos\beta &amp; 0 &amp; \sin\beta \\ \sin\alpha\sin\beta &amp; \cos\alpha &amp; -\sin\alpha\cos\beta \\ -\cos\alpha\sin\beta &amp; \sin\alpha &amp; \cos\alpha\cos\beta \end{bmatrix} $$
-而$$ R_{pitch} \cdot R_{roll} = \begin{bmatrix} \cos\beta &amp; 0 &amp; \sin\beta \\ 0 &amp; 1 &amp; 0 \\ -\sin\beta &amp; 0 &amp; \cos\beta \end{bmatrix} \begin{bmatrix} 1 &amp; 0 &amp; 0 \\ 0 &amp; \cos\alpha &amp; -\sin\alpha \\ 0 &amp; \sin\alpha &amp; \cos\alpha \end{bmatrix} = \begin{bmatrix} \cos\beta &amp; \sin\beta\sin\alpha &amp; \sin\beta\cos\alpha \\ 0 &amp; \cos\alpha &amp; -\sin\alpha \\ -\sin\beta &amp; \cos\beta\sin\alpha &amp; \cos\beta\cos\alpha \end{bmatrix} $$
-万向锁
-一般而言，旋转顺序是$R_{yaw}R_{pitch}R_{yaw}$ ,现在，令pitch轴角$\beta$ =90，	$$ R_{pitch}(\beta) = \begin{bmatrix} 0 &amp; 0 &amp; 1 \\ 0 &amp; 1 &amp; 0 \\ -1 &amp; 0 &amp; 0 \end{bmatrix} $$
-于是$$ R_{total}(\gamma, \frac{\pi}{2}, \alpha) = \begin{bmatrix} 0 &amp; \sin(\alpha - \gamma) &amp; \cos(\alpha - \gamma) \\ 0 &amp; \cos(\alpha - \gamma) &amp; -\sin(\alpha - \gamma) \\ -1 &amp; 0 &amp; 0 \end{bmatrix} $$
-我们发现roll与pitch已经彻底融合。
-其实理解起来很简单，容易绕晕的点其实就是绝对坐标系与本征坐标系的纠缠。我们把绝对坐标称为X,Y,Z、在本征与绝对坐标重叠的时候（这个很重要，这种对应是特殊的，只要转一下就没有对应关系了）。X对应roll轴、y轴对应pitch轴、z轴对应yaw轴，物体的沿roll轴前进。
-而万向锁的成因就很简单了。最开始，roll轴和X轴对应，不管我们做什么操作，轮到操作pitch轴的时候，如果旋转了90°，现在yaw轴实际上也和X轴对应了，我们**分辨不了**到底是roll轴的操作还是yaw轴的操作。（也就是roll轴和yaw轴指向了同一个绝对坐标轴，我们观察的视角是绝对坐标，而对物体的操作是本征的）
-</code></pre>
+        <h2 id="旋转矩阵"><a href="#旋转矩阵" class="headerlink" title="旋转矩阵"></a>旋转矩阵</h2><p>用来描述一个坐标系相对于另一个坐标系的姿态，列向量通常表示被描述坐标系的三个坐标轴在参考坐标系中的表达<br><strong>左乘旋转：</strong> 通常表示绕空间&#x2F;固定坐标系轴旋转。<br><strong>右乘旋转：</strong> 通常表示绕物体&#x2F;当前坐标系轴旋转。</p>
+<script type="math/tex">R\_{sb}</script>为从s转变成b的旋转矩阵，逆矩阵也就是<script type="math/tex">R\_{sb}^{-1} = R\_{bs}</script> ,起到相反的作用
+
+<h2 id="Adjoint-变换"><a href="#Adjoint-变换" class="headerlink" title="Adjoint 变换"></a>Adjoint 变换</h2><script type="math/tex; mode=display">
+[\text{Ad}_{T_{AB}}] = \begin{bmatrix} R & 0 \\ \hat{p}R & R \end{bmatrix}
+</script>
+<p>其中<script type="math/tex">\hat{p}</script> 是平移向量 <script type="math/tex">p</script> 的反对称矩阵，作用是直接转换不同参考系下物体的速度</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_A = [\text{Ad}_{T_{AB}}] \mathcal{V}_B
+</script>
+
+<h2 id="反对称矩阵"><a href="#反对称矩阵" class="headerlink" title="反对称矩阵"></a>反对称矩阵</h2><p>对于需要叉乘的对象w X θ， 可以转化成矩阵乘法，构件<script type="math/tex">\omega = \begin{bmatrix} \omega_x \ \omega_y \ \omega_z \end{bmatrix}</script>的反对称矩阵</p>
+<script type="math/tex; mode=display">
+[\omega] = \begin{bmatrix} 0 & -\omega_z & \omega_y \\ \omega_z & 0 & -\omega_x \\ -\omega_y & \omega_x & 0 \end{bmatrix}
+</script>
+<p>即可。反对称矩阵有一个重要性质<script type="math/tex">A^T = -A</script></p>
+<h2 id="速度矩阵"><a href="#速度矩阵" class="headerlink" title="速度矩阵"></a>速度矩阵</h2><script type="math/tex; mode=display">
+\hat{\mathcal{V}} = \begin{bmatrix} \hat{\omega} & v \\ 0 & 0 \end{bmatrix}
+</script>
+<p>其中<script type="math/tex">\hat{\omega}</script> 是反对称矩阵，这个矩阵的作用是，左乘刚体上一个齐次坐标 <script type="math/tex">P = [x, y, z, 1]^T</script> 时，可以得到该点在空间中的瞬时线速度：<script type="math/tex">\dot{P} = \hat{\mathcal{V}} P = \hat{\omega}p + v</script></p>
+<h2 id="位姿矩阵"><a href="#位姿矩阵" class="headerlink" title="位姿矩阵"></a>位姿矩阵</h2><p>一个4 x 4矩阵，包含旋转信息和平移信息。通常长成这个样子</p>
+<script type="math/tex; mode=display">
+T = \begin{bmatrix} R & p \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} r_{11} & r_{12} & r_{13} & p_x \\ r_{21} & r_{22} & r_{23} & p_y \\ r_{31} & r_{32} & r_{33} & p_z \\ 0 & 0 & 0 & 1 \end{bmatrix}
+</script>
+<h2 id="运动旋量-Twist"><a href="#运动旋量-Twist" class="headerlink" title="运动旋量(Twist)"></a>运动旋量(Twist)</h2><p>一个6维向量，包含角速度和线速度，长这样</p>
+<script type="math/tex; mode=display">
+\mathcal{V}_b = \begin{bmatrix} \omega_b \\ v_b \end{bmatrix} = \begin{bmatrix} \omega_x \\ \omega_y \\ \omega_z \\ v_x \\ v_y \\ v_z \end{bmatrix} \in \mathbb{R}^6
+</script>
+<h2 id="力旋量-Wrench"><a href="#力旋量-Wrench" class="headerlink" title="力旋量(Wrench)"></a>力旋量(Wrench)</h2><p>一个6维向量，包含力矩和力，长这样</p>
+<script type="math/tex; mode=display">
+\mathcal{F} = \begin{bmatrix} m \\ f \end{bmatrix} = \begin{bmatrix} m_x \\ m_y \\ m_z \\ f_x \\ f_y \\ f_z \end{bmatrix} \in \mathbb{R}^6
+</script>
+<h2 id="罗德里格斯公式"><a href="#罗德里格斯公式" class="headerlink" title="罗德里格斯公式"></a>罗德里格斯公式</h2><script type="math/tex; mode=display">
+e^{[\hat{\omega}]\theta} = I + \sin\theta [\hat{\omega}] + (1 - \cos\theta) [\hat{\omega}]^2
+</script>
+<p>其中<script type="math/tex">\hat{\omega}</script> 是与旋转轴同向的单位向量；θ是转的角度。出来是一个方阵，描述了旋转的程度大小。<br><strong>证明：</strong> 将<script type="math/tex">e^{[\hat{\omega}]\theta}</script> 泰勒展开成</p>
+<script type="math/tex; mode=display">
+e^{[\hat{\omega}]\theta} = I + ([\hat{\omega}]\theta) + \frac{([\hat{\omega}]\theta)^2}{2!} + \frac{([\hat{\omega}]\theta)^3}{3!} + \frac{([\hat{\omega}]\theta)^4}{4!} + \dots
+</script>
+<p>通过<script type="math/tex">[\hat{\omega}]^{k+2} = -[\hat{\omega}]^k</script> 规律化简，按照奇偶打包</p>
+<script type="math/tex; mode=display">
+e^{[\hat{\omega}]\theta} = I + \left( \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \dots \right) [\hat{\omega}] + \left( \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \dots \right) [\hat{\omega}]^2
+</script>
+<p>总结成</p>
+<script type="math/tex; mode=display">
+e^{[\hat{\omega}]\theta} = I + \sin\theta [\hat{\omega}] + (1 - \cos\theta) [\hat{\omega}]^2
+</script>
+
+<h2 id="Chasles-Mozzi定理"><a href="#Chasles-Mozzi定理" class="headerlink" title="Chasles-Mozzi定理"></a>Chasles-Mozzi定理</h2><p>任何刚体在三维空间中的一般位移（或瞬时运动），都可以等效为绕着空间中某一条特定直线的旋转，以及沿着该直线的平移的组合。</p>
+<h2 id="欧拉角表示姿态"><a href="#欧拉角表示姿态" class="headerlink" title="欧拉角表示姿态"></a>欧拉角表示姿态</h2><p>欧拉角表示是按照本体建立坐标系。pitch俯仰角（y轴）、yaw航向角（z轴）与roll翻滚角（x轴）组成。由于不统一的命名规则和本征与绝对的纠缠，本文统一用p、y、r与本征表示。</p>
+<h2 id="roll轴旋转矩阵"><a href="#roll轴旋转矩阵" class="headerlink" title="roll轴旋转矩阵"></a>roll轴旋转矩阵</h2><script type="math/tex; mode=display">
+R_{roll}(\alpha) = \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\alpha & -\sin\alpha \\ 0 & \sin\alpha & \cos\alpha \end{bmatrix}
+</script>
+<h2 id="pitch轴旋转矩阵"><a href="#pitch轴旋转矩阵" class="headerlink" title="pitch轴旋转矩阵"></a>pitch轴旋转矩阵</h2><script type="math/tex; mode=display">
+R_{pitch}(\beta) = \begin{bmatrix} \cos\beta & 0 & \sin\beta \\ 0 & 1 & 0 \\ -\sin\beta & 0 & \cos\beta \end{bmatrix}
+</script>
+<h2 id="yaw轴旋转矩阵"><a href="#yaw轴旋转矩阵" class="headerlink" title="yaw轴旋转矩阵"></a>yaw轴旋转矩阵</h2><script type="math/tex; mode=display">
+R_{yaw}(\gamma) = \begin{bmatrix} \cos\gamma & -\sin\gamma & 0 \\ \sin\gamma & \cos\gamma & 0 \\ 0 & 0 & 1 \end{bmatrix}
+</script>
+<p><strong>现在证明两点：</strong> 旋转结果与顺序有关、万向锁</p>
+<h2 id="顺序相关"><a href="#顺序相关" class="headerlink" title="顺序相关"></a>顺序相关</h2><script type="math/tex; mode=display">
+R_{roll} \cdot R_{pitch} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\alpha & -\sin\alpha \\ 0 & \sin\alpha & \cos\alpha \end{bmatrix} \begin{bmatrix} \cos\beta & 0 & \sin\beta \\ 0 & 1 & 0 \\ -\sin\beta & 0 & \cos\beta \end{bmatrix} = \begin{bmatrix} \cos\beta & 0 & \sin\beta \\ \sin\alpha\sin\beta & \cos\alpha & -\sin\alpha\cos\beta \\ -\cos\alpha\sin\beta & \sin\alpha & \cos\alpha\cos\beta \end{bmatrix}
+</script>
+<p>而</p>
+<script type="math/tex; mode=display">
+R_{pitch} \cdot R_{roll} = \begin{bmatrix} \cos\beta & 0 & \sin\beta \\ 0 & 1 & 0 \\ -\sin\beta & 0 & \cos\beta \end{bmatrix} \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos\alpha & -\sin\alpha \\ 0 & \sin\alpha & \cos\alpha \end{bmatrix} = \begin{bmatrix} \cos\beta & \sin\beta\sin\alpha & \sin\beta\cos\alpha \\ 0 & \cos\alpha & -\sin\alpha \\ -\sin\beta & \cos\beta\sin\alpha & \cos\beta\cos\alpha \end{bmatrix}
+</script>
+<p>万向锁<br>一般而言，旋转顺序是<script type="math/tex">R_{yaw}R_{pitch}R_{yaw}</script> ,现在，令pitch轴角<script type="math/tex">\beta</script> &#x3D;90，</p>
+<script type="math/tex; mode=display">
+R_{pitch}(\beta) = \begin{bmatrix} 0 & 0 & 1 \\ 0 & 1 & 0 \\ -1 & 0 & 0 \end{bmatrix}
+</script>
+<p>于是</p>
+<script type="math/tex; mode=display">
+R_{total}(\gamma, \frac{\pi}{2}, \alpha) = \begin{bmatrix} 0 & \sin(\alpha - \gamma) & \cos(\alpha - \gamma) \\ 0 & \cos(\alpha - \gamma) & -\sin(\alpha - \gamma) \\ -1 & 0 & 0 \end{bmatrix}
+</script>
+<p>我们发现roll与pitch已经彻底融合。<br>其实理解起来很简单，容易绕晕的点其实就是绝对坐标系与本征坐标系的纠缠。我们把绝对坐标称为X,Y,Z、在本征与绝对坐标重叠的时候（这个很重要，这种对应是特殊的，只要转一下就没有对应关系了）。X对应roll轴、y轴对应pitch轴、z轴对应yaw轴，物体的沿roll轴前进。<br>而万向锁的成因就很简单了。最开始，roll轴和X轴对应，不管我们做什么操作，轮到操作pitch轴的时候，如果旋转了90°，现在yaw轴实际上也和X轴对应了，我们<strong>分辨不了</strong>到底是roll轴的操作还是yaw轴的操作。（也就是roll轴和yaw轴指向了同一个绝对坐标轴，我们观察的视角是绝对坐标，而对物体的操作是本征的）</p>
 
       
 
@@ -274,7 +336,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    目录，不存在的…
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5"><span class="toc-number">1.</span> <span class="toc-text">旋转矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Adjoint-%E5%8F%98%E6%8D%A2"><span class="toc-number">2.</span> <span class="toc-text">Adjoint 变换</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%8D%E5%AF%B9%E7%A7%B0%E7%9F%A9%E9%98%B5"><span class="toc-number">3.</span> <span class="toc-text">反对称矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9F%E5%BA%A6%E7%9F%A9%E9%98%B5"><span class="toc-number">4.</span> <span class="toc-text">速度矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%8D%E5%A7%BF%E7%9F%A9%E9%98%B5"><span class="toc-number">5.</span> <span class="toc-text">位姿矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E5%8A%A8%E6%97%8B%E9%87%8F-Twist"><span class="toc-number">6.</span> <span class="toc-text">运动旋量(Twist)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%9B%E6%97%8B%E9%87%8F-Wrench"><span class="toc-number">7.</span> <span class="toc-text">力旋量(Wrench)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BD%97%E5%BE%B7%E9%87%8C%E6%A0%BC%E6%96%AF%E5%85%AC%E5%BC%8F"><span class="toc-number">8.</span> <span class="toc-text">罗德里格斯公式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Chasles-Mozzi%E5%AE%9A%E7%90%86"><span class="toc-number">9.</span> <span class="toc-text">Chasles-Mozzi定理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AC%A7%E6%8B%89%E8%A7%92%E8%A1%A8%E7%A4%BA%E5%A7%BF%E6%80%81"><span class="toc-number">10.</span> <span class="toc-text">欧拉角表示姿态</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#roll%E8%BD%B4%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5"><span class="toc-number">11.</span> <span class="toc-text">roll轴旋转矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pitch%E8%BD%B4%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5"><span class="toc-number">12.</span> <span class="toc-text">pitch轴旋转矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#yaw%E8%BD%B4%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5"><span class="toc-number">13.</span> <span class="toc-text">yaw轴旋转矩阵</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%BA%E5%BA%8F%E7%9B%B8%E5%85%B3"><span class="toc-number">14.</span> <span class="toc-text">顺序相关</span></a></li></ol>
                     </div>
                 </span>
             </div>
